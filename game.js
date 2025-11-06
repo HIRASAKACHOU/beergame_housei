@@ -105,7 +105,6 @@ class BeerGame {
         this.currentRound = 0;
         this.totalRounds = 30;
         this.transportDelay = 1;
-        this.processingTime = 0;
         this.receivingTime = 1;
         this.productionTime = 1;
         this.inventoryCost = 1;
@@ -120,12 +119,11 @@ class BeerGame {
         this.roundHistory = [];
     }
 
-        // 初始化游戏
+    // ゲーム初期化
     initialize(playerRole, aiSettings, params) {
         this.playerRole = playerRole;
         this.totalRounds = params.totalRounds;
         this.transportDelay = params.transportDelay;
-        this.processingTime = params.processingTime;
         this.receivingTime = params.receivingTime;
         this.productionTime = params.productionTime;
         this.inventoryCost = params.inventoryCost;
@@ -144,13 +142,27 @@ class BeerGame {
         // 顧客需要シーケンスの生成（最初の4ラウンドは需要4、その後は需要8）
         this.customerDemand = Array(4).fill(4).concat(Array(this.totalRounds - 4).fill(8));
 
-        // 輸送中の商品を初期化
+        // 各役割の初期在庫と輸送中の商品を設定
         Object.keys(this.roles).forEach(roleKey => {
-            // 工場は生産時間を使用、その他の役割は輸送遅延+備貨時間+入庫時間を使用
-            const totalDelay = roleKey === 'factory' 
-                ? this.productionTime 
-                : this.transportDelay + this.processingTime + this.receivingTime;
-            this.roles[roleKey].inTransit = Array(totalDelay).fill(4);
+            const role = this.roles[roleKey];
+            
+            if (roleKey === 'factory') {
+                // 工場: 初期在庫4、生産時間に応じた生産中の商品
+                role.inventory = 4;
+                role.inTransit = Array(this.productionTime).fill(4);
+            } else {
+                // その他の役割: 初期在庫12、輸送遅延+入荷時間に応じた輸送中の商品
+                role.inventory = 12;
+                const totalDelay = this.transportDelay + this.receivingTime;
+                // 輸送中に4、入荷予定に4を設定
+                if (totalDelay === 2) {
+                    role.inTransit = [4, 4]; // [入荷予定, 輸送中]
+                } else if (totalDelay === 1) {
+                    role.inTransit = [4]; // [入荷予定]
+                } else {
+                    role.inTransit = Array(totalDelay).fill(4);
+                }
+            }
         });
 
         this.gameStarted = true;
@@ -444,11 +456,10 @@ function startGame() {
         factory: document.getElementById('factoryAI').value
     };
 
-    // 收集游戏参数
+    // 収集游戏参数
     const params = {
         totalRounds: totalRounds,
         transportDelay: parseInt(document.getElementById('transportDelay').value),
-        processingTime: parseInt(document.getElementById('processingTime').value),
         receivingTime: parseInt(document.getElementById('receivingTime').value),
         productionTime: parseInt(document.getElementById('productionTime').value),
         inventoryCost: parseFloat(document.getElementById('inventoryCost').value),
@@ -518,10 +529,10 @@ function updateMainUI() {
         transitTitle.textContent = isFactory ? '🏭 生産中の商品' : '🚛 輸送中の商品';
     }
     
-    // 工厂显示生产时间，其他角色显示运输+备货+入库时间
+    // 工厂显示生产时间，其他角色显示运输+入荷時間
     const delayTime = isFactory 
         ? game.productionTime 
-        : game.transportDelay + game.processingTime + game.receivingTime;
+        : game.transportDelay + game.receivingTime;
     document.getElementById('delayDisplay').textContent = delayTime;
     
     // 默认订货值设为上回合需求
