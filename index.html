@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ビールゲーム - シングルプレイヤーモード</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍺 ビールゲーム - シングルプレイヤーモード</h1>
+            <div class="game-info">
+                <span>ラウンド: <strong id="currentRound">0</strong></span>
+                <span>総ラウンド数: <strong id="totalRounds">20</strong></span>
+            </div>
+        </header>
+
+        <div class="setup-panel" id="setupPanel">
+            <h2>ゲーム設定</h2>
+            <div class="setup-section">
+                <h3>役割を選択してください</h3>
+                <div class="role-select">
+                    <button class="role-btn" data-role="retailer">小売業者</button>
+                    <button class="role-btn" data-role="supplier2">二次卸売業者</button>
+                    <button class="role-btn" data-role="supplier1">一次卸売業者</button>
+                    <button class="role-btn" data-role="factory">工場</button>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <h3>AI役割設定</h3>
+                <div class="ai-settings">
+                    <div class="ai-role">
+                        <label>小売業者 AI:</label>
+                        <select id="retailerAI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="aggressive">積極型</option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>二次卸売業者 AI:</label>
+                        <select id="supplier2AI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="aggressive">積極型</option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>一次卸売業者 AI:</label>
+                        <select id="supplier1AI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="aggressive">積極型</option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>工場 AI:</label>
+                        <select id="factoryAI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="aggressive">積極型</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <h3>ゲームパラメータ</h3>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label>輸送遅延:</label>
+                        <input type="number" id="transportDelay" value="1" min="1" max="5">
+                    </div>
+                    <div class="param-item">
+                        <label>処理時間:</label>
+                        <input type="number" id="processingTime" value="1" min="1" max="3">
+                    </div>
+                    <div class="param-item">
+                        <label>生産時間:</label>
+                        <input type="number" id="productionTime" value="1" min="1" max="3">
+                    </div>
+                    <div class="param-item">
+                        <label>在庫コスト:</label>
+                        <input type="number" id="inventoryCost" value="1" min="0.5" max="5" step="0.5">
+                    </div>
+                    <div class="param-item">
+                        <label>欠品コスト:</label>
+                        <input type="number" id="backorderCost" value="2" min="1" max="10" step="0.5">
+                    </div>
+                </div>
+            </div>
+
+            <button class="start-btn" id="startBtn">ゲーム開始</button>
+        </div>
+
+        <!-- ゲームフェーズモーダル -->
+        <div class="modal" id="phaseModal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="modalTitle">ラウンド開始</h2>
+                <div id="modalBody"></div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" id="modalConfirmBtn">確認</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-panel" id="gamePanel" style="display: none;">
+            <!-- プレイヤー操作エリア -->
+            <div class="main-game-area">
+                <div class="game-header-info">
+                    <div class="header-left">
+                        <h2 id="playerRoleName">🏪 小売業者</h2>
+                        <div class="cost-display">
+                            <span>今回のコスト: <strong id="roundCost">0</strong> 円</span>
+                            <span class="total-cost">累計コスト: <strong id="totalCost">0</strong> 円</span>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <button class="control-btn next-round-btn" id="nextRoundMainBtn" onclick="nextRoundMain()" disabled>
+                            次のラウンド ➔
+                        </button>
+                        <button class="control-btn reset-btn-small" onclick="resetGame()">リセット</button>
+                    </div>
+                </div>
+
+                <!-- ビジュアル操作エリア -->
+                <div class="visual-operation-area">
+                    <!-- 在庫エリア -->
+                    <div class="operation-section inventory-section">
+                        <h3>📦 在庫エリア</h3>
+                        <div class="inventory-display" id="inventoryDisplay">
+                            <div class="inventory-count">12</div>
+                            <div class="inventory-label">個</div>
+                        </div>
+                        <div class="info-bar">
+                            <span>欠品: <strong id="backorderDisplay">0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- 出荷エリア -->
+                    <div class="operation-section shipping-section">
+                        <h3>🚚 出荷エリア</h3>
+                        <div class="demand-info">
+                            <p>今週の需要: <strong id="demandDisplay">4</strong> 個</p>
+                            <p>欠品補充: <strong id="backorderNeedDisplay">0</strong> 個</p>
+                            <p class="total-need">出荷必要数: <strong id="totalNeedDisplay">4</strong> 個</p>
+                        </div>
+                        <div class="shipping-controls-main">
+                            <label>出荷数量:</label>
+                            <input type="number" id="shipInput" min="0" value="0">
+                            <button class="max-btn" onclick="setMaxShipping()">最大</button>
+                        </div>
+                        <button class="action-btn ship-btn" onclick="confirmShipping()">✓ 出荷確認</button>
+                    </div>
+
+                    <!-- 発注エリア -->
+                    <div class="operation-section order-section">
+                        <h3 id="orderSectionTitle">📝 発注エリア</h3>
+                        <div class="order-info">
+                            <p class="delay-info">📅 遅延: <strong id="delayDisplay">2</strong> ラウンド後に到着</p>
+                            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                                💡 在庫と需要に基づいて発注量を決定してください
+                            </p>
+                        </div>
+                        <div class="order-controls-main">
+                            <label id="orderInputLabel">発注数量:</label>
+                            <input type="number" id="orderInput" min="0" value="4">
+                        </div>
+                        <button class="action-btn order-btn" onclick="confirmOrder()">✓ 発注確認</button>
+                    </div>
+                </div>
+
+                <!-- 輸送可視化 -->
+                <div class="transit-visualization">
+                    <h3>🚛 輸送中の商品</h3>
+                    <div class="transit-timeline" id="transitTimeline">
+                        <!-- 動的生成 -->
+                    </div>
+                </div>
+
+                <!-- 履歴 -->
+                <div class="history-section">
+                    <h3>📊 ラウンド履歴</h3>
+                    <div class="history-table-container">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>ラウンド</th>
+                                    <th>受領</th>
+                                    <th>出荷</th>
+                                    <th>欠品</th>
+                                    <th>発注</th>
+                                    <th>コスト</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- 動的生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-panel" id="resultPanel" style="display: none;">
+            <h2>🎉 ゲーム終了</h2>
+            <div class="final-scores" id="finalScores"></div>
+            <button class="reset-btn" onclick="resetGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
