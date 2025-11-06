@@ -12,12 +12,20 @@
             <h1>🍺 ビールゲーム - シングルプレイヤーモード</h1>
             <div class="game-info">
                 <span>ラウンド: <strong id="currentRound">0</strong></span>
-                <span>総ラウンド数: <strong id="totalRounds">20</strong></span>
+                <span>総ラウンド数: <strong id="totalRounds">30</strong></span>
             </div>
         </header>
 
         <div class="setup-panel" id="setupPanel">
             <h2>ゲーム設定</h2>
+            <div class="setup-section">
+                <h3>総ラウンド数</h3>
+                <div class="round-select">
+                    <button class="round-btn" data-rounds="20">20ラウンド</button>
+                    <button class="round-btn selected" data-rounds="30">30ラウンド</button>
+                    <button class="round-btn" data-rounds="40">40ラウンド</button>
+                </div>
+            </div>
             <div class="setup-section">
                 <h3>役割を選択してください</h3>
                 <div class="role-select">
@@ -75,11 +83,15 @@
                 <div class="param-grid">
                     <div class="param-item">
                         <label>輸送遅延:</label>
-                        <input type="number" id="transportDelay" value="1" min="1" max="5">
+                        <input type="number" id="transportDelay" value="1" min="0" max="5">
                     </div>
                     <div class="param-item">
-                        <label>処理時間:</label>
-                        <input type="number" id="processingTime" value="1" min="1" max="3">
+                        <label>備貨時間:</label>
+                        <input type="number" id="processingTime" value="0" min="0" max="3">
+                    </div>
+                    <div class="param-item">
+                        <label>入庫時間:</label>
+                        <input type="number" id="receivingTime" value="1" min="0" max="3">
                     </div>
                     <div class="param-item">
                         <label>生産時間:</label>
@@ -178,7 +190,7 @@
 
                 <!-- 輸送可視化 -->
                 <div class="transit-visualization">
-                    <h3>🚛 輸送中の商品</h3>
+                    <h3 id="transitTitle">🚛 輸送中の商品</h3>
                     <div class="transit-timeline" id="transitTimeline">
                         <!-- 動的生成 -->
                     </div>

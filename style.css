@@ -98,6 +98,35 @@ header h1 {
     color: white;
 }
 
+.round-select {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 10px 0;
+}
+
+.round-btn {
+    padding: 12px 30px;
+    border: 2px solid #ddd;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.round-btn:hover {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.round-btn.selected {
+    border-color: #10b981;
+    background: #10b981;
+    color: white;
+}
+
 .ai-settings {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

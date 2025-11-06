@@ -103,9 +103,10 @@ class BeerGame {
             factory: new Role('工場', 'factory')
         };
         this.currentRound = 0;
-        this.totalRounds = 20;
+        this.totalRounds = 30;
         this.transportDelay = 1;
-        this.processingTime = 1;
+        this.processingTime = 0;
+        this.receivingTime = 1;
         this.productionTime = 1;
         this.inventoryCost = 1;
         this.backorderCost = 2;
@@ -119,11 +120,13 @@ class BeerGame {
         this.roundHistory = [];
     }
 
-    // ゲーム初期化
+        // 初始化游戏
     initialize(playerRole, aiSettings, params) {
         this.playerRole = playerRole;
+        this.totalRounds = params.totalRounds;
         this.transportDelay = params.transportDelay;
         this.processingTime = params.processingTime;
+        this.receivingTime = params.receivingTime;
         this.productionTime = params.productionTime;
         this.inventoryCost = params.inventoryCost;
         this.backorderCost = params.backorderCost;
@@ -143,10 +146,10 @@ class BeerGame {
 
         // 輸送中の商品を初期化
         Object.keys(this.roles).forEach(roleKey => {
-            // 工場は生産時間を使用、その他の役割は輸送遅延+処理時間を使用
+            // 工場は生産時間を使用、その他の役割は輸送遅延+備貨時間+入庫時間を使用
             const totalDelay = roleKey === 'factory' 
                 ? this.productionTime 
-                : this.transportDelay + this.processingTime;
+                : this.transportDelay + this.processingTime + this.receivingTime;
             this.roles[roleKey].inTransit = Array(totalDelay).fill(4);
         });
 
@@ -210,21 +213,21 @@ class BeerGame {
         const modalBody = document.getElementById('modalBody');
         const modalBtn = document.getElementById('modalConfirmBtn');
         
-        modalTitle.textContent = `第${this.currentRound} ラウンド - 受領確認`;
+        modalTitle.textContent = `第 ${this.currentRound} 回合 - 收货确认`;
         modalBody.innerHTML = `
             <div class="modal-info success">
-                <p style="font-size: 18px; margin-bottom: 15px;">📦 <strong>今週受領した商品: ${arrived} 個</strong></p>
+                <p style="font-size: 18px; margin-bottom: 15px;">📦 <strong>本周收到货物: ${arrived} 件</strong></p>
                 <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-                <p>📊 現在の在庫: <strong>${playerRoleObj.inventory}</strong> 個</p>
-                <p>⚠️ 累計欠品: <strong>${playerRoleObj.backorder}</strong> 個</p>
-                <p>📋 今週の需要: <strong>${playerRoleObj.currentDemand}</strong> 個</p>
+                <p>📊 当前库存: <strong>${playerRoleObj.inventory}</strong> 件</p>
+                <p>⚠️ 累计缺货: <strong>${playerRoleObj.backorder}</strong> 件</p>
+                <p>📋 本周需求: <strong>${playerRoleObj.currentDemand}</strong> 件</p>
             </div>
             <p style="text-align: center; color: #666; margin-top: 15px;">
-                確認をクリックしてメイン操作画面へ
+                点击确认进入主操作界面
             </p>
         `;
         
-        modalBtn.textContent = '確認 → 操作へ';
+        modalBtn.textContent = '确认 → 进入操作';
         modalBtn.onclick = () => {
             modal.style.display = 'none';
             this.currentPhase = 'operation';
@@ -424,6 +427,15 @@ function startGame() {
         return;
     }
 
+    // 获取选择的回合数
+    const roundBtns = document.querySelectorAll('.round-btn');
+    let totalRounds = 30;
+    roundBtns.forEach(btn => {
+        if (btn.classList.contains('selected')) {
+            totalRounds = parseInt(btn.dataset.rounds);
+        }
+    });
+
     // 收集AI设置
     const aiSettings = {
         retailer: document.getElementById('retailerAI').value,
@@ -434,8 +446,10 @@ function startGame() {
 
     // 收集游戏参数
     const params = {
+        totalRounds: totalRounds,
         transportDelay: parseInt(document.getElementById('transportDelay').value),
         processingTime: parseInt(document.getElementById('processingTime').value),
+        receivingTime: parseInt(document.getElementById('receivingTime').value),
         productionTime: parseInt(document.getElementById('productionTime').value),
         inventoryCost: parseFloat(document.getElementById('inventoryCost').value),
         backorderCost: parseFloat(document.getElementById('backorderCost').value)
@@ -456,10 +470,10 @@ function updateMainUI() {
 
     const role = game.roles[game.playerRole];
     const roleNames = {
-        'retailer': '🏪 小売業者',
-        'supplier2': '📦 二次卸売業者',
-        'supplier1': '🚚 一次卸売業者',
-        'factory': '🏭 工場'
+        'retailer': '🏪 零售商',
+        'supplier2': '📦 二级供应商',
+        'supplier1': '🚚 一级供应商',
+        'factory': '🏭 工厂'
     };
 
     // 更新回合信息
@@ -494,14 +508,20 @@ function updateMainUI() {
 
     // 更新订货区
     const isFactory = game.playerRole === 'factory';
-    document.getElementById('orderSectionTitle').textContent = isFactory ? '🏭 生産エリア' : '📝 订货区';
+    document.getElementById('orderSectionTitle').textContent = isFactory ? '🏭 生産エリア' : '📝 発注エリア';
     document.getElementById('orderInputLabel').textContent = isFactory ? '生産数量:' : '発注数量:';
     document.querySelector('.order-btn').textContent = isFactory ? '✓ 生産確認' : '✓ 発注確認';
     
-    // 工厂显示生产时间，其他角色显示运输+处理时间
+    // 更新"輸送中の商品"标题 - 工厂显示"生産中の商品"
+    const transitTitle = document.getElementById('transitTitle');
+    if (transitTitle) {
+        transitTitle.textContent = isFactory ? '🏭 生産中の商品' : '🚛 輸送中の商品';
+    }
+    
+    // 工厂显示生产时间，其他角色显示运输+备货+入库时间
     const delayTime = isFactory 
         ? game.productionTime 
-        : game.transportDelay + game.processingTime;
+        : game.transportDelay + game.processingTime + game.receivingTime;
     document.getElementById('delayDisplay').textContent = delayTime;
     
     // 默认订货值设为上回合需求
@@ -526,7 +546,7 @@ function updateTransitTimeline() {
     timeline.innerHTML = '';
     
     if (role.inTransit.length === 0) {
-        timeline.innerHTML = '<p style="color: #999; text-align: center; width: 100%;">輸送中の商品がありません</p>';
+        timeline.innerHTML = '<p style="color: #999; text-align: center; width: 100%;">暂无运输中的货物</p>';
         return;
     }
     
@@ -541,7 +561,7 @@ function updateTransitTimeline() {
         const arrivalRound = game.currentRound + roundsLeft;
         
         item.innerHTML = `
-            <div class="transit-round">${index === 0 ? '次ラウンド到着' : `${roundsLeft}ラウンド後`}</div>
+            <div class="transit-round">${index === 0 ? '下回合到达' : `${roundsLeft}回合后`}</div>
             <div class="transit-amount">${amount}</div>
             <div style="font-size: 12px; color: #999;">第${arrivalRound}回合</div>
         `;
@@ -557,7 +577,7 @@ function updateHistoryTable() {
     tbody.innerHTML = '';
     
     if (game.history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">履歴がありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">暂无历史记录</td></tr>';
         return;
     }
     
@@ -615,13 +635,13 @@ function confirmShipping() {
     const shipAmount = parseInt(document.getElementById('shipInput').value) || 0;
     
     if (shipAmount < 0) {
-        alert('出荷数量は負の数にできません！');
+        alert('发货数量不能为负数！');
         return;
     }
     
     const role = game.roles[game.playerRole];
     if (shipAmount > role.inventory) {
-        alert('出荷数量は在庫を超えられません！');
+        alert('发货数量不能超过库存！');
         return;
     }
     
@@ -637,7 +657,7 @@ function confirmOrder() {
     const orderAmount = parseInt(document.getElementById('orderInput').value) || 0;
     
     if (orderAmount < 0) {
-        alert('発注数量は負の数にできません！');
+        alert('订货数量不能为负数！');
         return;
     }
     
@@ -673,9 +693,9 @@ function showResults() {
         const card = document.createElement('div');
         card.className = index === 0 ? 'score-card winner' : 'score-card';
         card.innerHTML = `
-            <h3>${score.name} ${score.isPlayer ? '(あなた)' : ''}</h3>
-            <div class="final-cost">${score.cost} 円</div>
-            <div>${index === 0 ? '🏆 最優秀' : `第${index + 1} 名`}</div>
+            <h3>${score.name} ${score.isPlayer ? '(你)' : ''}</h3>
+            <div class="final-cost">${score.cost} 元</div>
+            <div>${index === 0 ? '🏆 最佳表现' : `第 ${index + 1} 名`}</div>
         `;
         scoresContainer.appendChild(card);
     });
@@ -698,6 +718,14 @@ function resetGame() {
 // ==================== 事件监听 ====================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 回合数选择
+    document.querySelectorAll('.round-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        });
+    });
+
     // 角色选择
     document.querySelectorAll('.role-btn').forEach(btn => {
         btn.addEventListener('click', () => {
