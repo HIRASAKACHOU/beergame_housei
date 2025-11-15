@@ -174,6 +174,7 @@ class BeerGame {
         this.roundHistory = {
             round: this.currentRound,
             received: 0,
+            inventory: 0,
             shipped: 0,
             backorder: 0,
             ordered: 0,
@@ -343,6 +344,7 @@ class BeerGame {
         playerRoleObj.backorder = newBackorder;
         
         this.roundHistory.shipped = actualShip;
+        this.roundHistory.inventory = playerRoleObj.inventory; // 记录发货后的库存
         this.roundHistory.backorder = newBackorder;
         this.shippingConfirmed = true;
         
@@ -615,8 +617,10 @@ function updateMainUI() {
         : game.transportDelay + game.receivingTime;
     document.getElementById('delayDisplay').textContent = delayTime;
     
-    // 所有角色的订货/生产数量初始为空，需要手动填写
-    document.getElementById('orderInput').value = '';
+    // 订货数量只在新回合开始时清空，确认订货后保留显示
+    if (!game.orderingConfirmed) {
+        document.getElementById('orderInput').value = '';
+    }
 
     // 更新入荷処理区
     updateReceivingArea();
@@ -705,7 +709,7 @@ function updateHistoryTable() {
     tbody.innerHTML = '';
     
     if (game.history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">履歴がありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">履歴がありません</td></tr>';
         return;
     }
     
@@ -715,6 +719,7 @@ function updateHistoryTable() {
         row.innerHTML = `
             <td><strong>${record.round}</strong></td>
             <td>${record.received}</td>
+            <td>${record.inventory}</td>
             <td>${record.shipped}</td>
             <td>${record.backorder}</td>
             <td>${record.ordered}</td>
@@ -833,7 +838,7 @@ function showResults() {
         card.className = index === 0 ? 'score-card winner' : 'score-card';
         card.innerHTML = `
             <h3>${score.name} ${score.isPlayer ? '(あなた)' : ''}</h3>
-            <div class="final-cost">${score.cost} 円</div>
+            <div class="final-cost">${score.cost} ドル</div>
             <div>${index === 0 ? '🏆 最優秀' : `第 ${index + 1} 位`}</div>
         `;
         scoresContainer.appendChild(card);
