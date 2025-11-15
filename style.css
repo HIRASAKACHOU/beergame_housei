@@ -1374,3 +1374,158 @@ header h1 {
         width: 100%;
     }
 }
+
+/* ==================== 像素风格增强 ==================== */
+
+/* 像素风格字体效果 */
+.pixel-text {
+    image-rendering: pixelated;
+    font-family: monospace;
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+}
+
+/* 箱子动画 */
+@keyframes box-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.inventory-display::before {
+    content: '📦';
+    font-size: 40px;
+    display: block;
+    margin-bottom: 10px;
+    animation: box-bounce 2s ease-in-out infinite;
+}
+
+/* 卡车动画 */
+@keyframes truck-move {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(10px); }
+}
+
+.transit-item::before {
+    content: '🚛';
+    font-size: 20px;
+    margin-right: 8px;
+    display: inline-block;
+    animation: truck-move 1.5s ease-in-out infinite;
+}
+
+/* 入荷处理动画 */
+@keyframes receiving-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+.receiving-item {
+    animation: receiving-pulse 1.8s ease-in-out infinite;
+}
+
+.receiving-item::before {
+    content: '📥';
+    font-size: 20px;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+/* 金币闪烁效果 */
+@keyframes coin-shine {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.3); }
+}
+
+.cost-display strong {
+    animation: coin-shine 2s ease-in-out infinite;
+    display: inline-block;
+}
+
+/* 像素边框效果 */
+.pixel-border {
+    border: 3px solid #333;
+    box-shadow: 
+        3px 3px 0 #666,
+        6px 6px 0 #999;
+    border-radius: 0;
+}
+
+/* 按钮按下效果 */
+.ship-btn:active, .order-btn:active, .control-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 警告闪烁 */
+@keyframes warning-blink {
+    0%, 100% { background-color: #fee; }
+    50% { background-color: #fcc; }
+}
+
+.inventory-display.low {
+    animation: warning-blink 1s ease-in-out infinite;
+}
+
+/* 成功提示动画 */
+@keyframes success-fade {
+    0% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1); }
+}
+
+/* 像素点阵背景 */
+.game-panel {
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px),
+        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px);
+}
+
+/* 数字跳动效果 */
+@keyframes number-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.inventory-count {
+    animation: number-pop 0.3s ease-in-out;
+}
+
+/* 回合进度条像素风格 */
+.round-progress {
+    height: 8px;
+    background: repeating-linear-gradient(
+        90deg,
+        #667eea 0px,
+        #667eea 4px,
+        #764ba2 4px,
+        #764ba2 8px
+    );
+    border: 2px solid #333;
+    margin-top: 10px;
+}
+
+/* 像素风格阴影 */
+.pixel-shadow {
+    box-shadow: 
+        4px 4px 0 rgba(0, 0, 0, 0.1),
+        8px 8px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* 加载动画 */
+@keyframes pixel-loading {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.loading-dot {
+    width: 8px;
+    height: 8px;
+    background: #667eea;
+    display: inline-block;
+    margin: 0 2px;
+    animation: pixel-loading 1.4s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
