@@ -192,7 +192,24 @@ class BeerGame {
         const playerRoleObj = this.roles[this.playerRole];
         const isFactory = this.playerRole === 'factory';
         
-        // 步骤1: 运输中的货物 → 入荷处理区
+        // 步骤1: 入荷处理区的货物 → 库存（先处理上一回合到达的）
+        let receivedToInventory = 0;
+        if (playerRoleObj.receiving.length > 0) {
+            receivedToInventory = playerRoleObj.receiving.shift() || 0;
+            playerRoleObj.receiveGoods(receivedToInventory);
+        }
+        
+        this.roundHistory.received = receivedToInventory;
+        
+        // AI角色：入荷 → 库存
+        Object.values(this.roles).forEach(role => {
+            if (!role.isPlayer && role.receiving.length > 0) {
+                const toInventory = role.receiving.shift() || 0;
+                role.receiveGoods(toInventory);
+            }
+        });
+        
+        // 步骤2: 运输中的货物 → 入荷处理区（本回合新到达的）
         let arrivedToReceiving = 0;
         if (playerRoleObj.inTransit.length > 0) {
             arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
@@ -213,23 +230,6 @@ class BeerGame {
                         role.receiving.push(aiArrived);
                     }
                 }
-            }
-        });
-        
-        // 步骤2: 入荷处理区的货物 → 库存
-        let receivedToInventory = 0;
-        if (playerRoleObj.receiving.length > 0) {
-            receivedToInventory = playerRoleObj.receiving.shift() || 0;
-            playerRoleObj.receiveGoods(receivedToInventory);
-        }
-        
-        this.roundHistory.received = receivedToInventory;
-        
-        // AI角色：入荷 → 库存
-        Object.values(this.roles).forEach(role => {
-            if (!role.isPlayer && role.receiving.length > 0) {
-                const toInventory = role.receiving.shift() || 0;
-                role.receiveGoods(toInventory);
             }
         });
         
