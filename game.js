@@ -195,23 +195,91 @@ class BeerGame {
     // 受領フェーズを表示
     showReceivePhase() {
         const playerRoleObj = this.roles[this.playerRole];
+        const isFactory = this.playerRole === 'factory';
         
-        // 执行收货
+        // 检查是否有货物到达（但尚未入库）
         let arrived = 0;
         if (playerRoleObj.inTransit.length > 0) {
             arrived = playerRoleObj.inTransit.shift() || 0;
-            playerRoleObj.receiveGoods(arrived);
         }
         
-        this.roundHistory.received = arrived;
-        
-        // AI也收货
-        Object.values(this.roles).forEach(role => {
-            if (!role.isPlayer && role.inTransit.length > 0) {
-                const aiArrived = role.inTransit.shift() || 0;
-                role.receiveGoods(aiArrived);
+        // 如果不是工厂且有货物到达，显示入荷流程窗口
+        if (!isFactory && arrived > 0) {
+            this.showReceivingProcess(arrived);
+        } else {
+            // 工厂直接入库，或没有货物到达
+            if (arrived > 0) {
+                playerRoleObj.receiveGoods(arrived);
             }
-        });
+            this.roundHistory.received = arrived;
+            
+            // AI也收货
+            Object.values(this.roles).forEach(role => {
+                if (!role.isPlayer && role.inTransit.length > 0) {
+                    const aiArrived = role.inTransit.shift() || 0;
+                    role.receiveGoods(aiArrived);
+                }
+            });
+            
+            // 显示回合开始确认窗口
+            this.showRoundStartModal(arrived);
+        }
+    }
+    
+    // 显示入荷流程窗口（仅非工厂角色）
+    showReceivingProcess(arrived) {
+        const playerRoleObj = this.roles[this.playerRole];
+        
+        // 更新UI
+        updateMainUI();
+        
+        // 显示入荷流程弹窗
+        const modal = document.getElementById('phaseModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalBtn = document.getElementById('modalConfirmBtn');
+        
+        modalTitle.textContent = `第${this.currentRound}ラウンド - 入荷処理中`;
+        modalBody.innerHTML = `
+            <div class="modal-info warning" style="background: #fff7ed; border-left: 4px solid #f59e0b;">
+                <p style="font-size: 18px; margin-bottom: 15px;">🚛 <strong>商品が到着しました: ${arrived}個</strong></p>
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid #fed7aa;">
+                <p style="font-size: 16px; color: #92400e; margin: 10px 0;">
+                    📥 入荷処理を行っています...
+                </p>
+                <p style="font-size: 14px; color: #666; margin-top: 15px;">
+                    入荷時間: ${game.receivingTime}ラウンド
+                </p>
+            </div>
+            <p style="text-align: center; color: #666; margin-top: 15px;">
+                確認をクリックして在庫に追加
+            </p>
+        `;
+        
+        modalBtn.textContent = '入荷確認 → 在庫へ';
+        modalBtn.onclick = () => {
+            // 入库
+            playerRoleObj.receiveGoods(arrived);
+            this.roundHistory.received = arrived;
+            
+            // AI也收货
+            Object.values(this.roles).forEach(role => {
+                if (!role.isPlayer && role.inTransit.length > 0) {
+                    const aiArrived = role.inTransit.shift() || 0;
+                    role.receiveGoods(aiArrived);
+                }
+            });
+            
+            // 显示回合开始确认窗口
+            this.showRoundStartModal(arrived);
+        };
+        
+        modal.style.display = 'flex';
+    }
+    
+    // 显示回合开始确认窗口
+    showRoundStartModal(arrived) {
+        const playerRoleObj = this.roles[this.playerRole];
         
         // 设置需求
         this.updateDemand();
@@ -225,21 +293,21 @@ class BeerGame {
         const modalBody = document.getElementById('modalBody');
         const modalBtn = document.getElementById('modalConfirmBtn');
         
-        modalTitle.textContent = `第 ${this.currentRound} 回合 - 收货确认`;
+        modalTitle.textContent = `第${this.currentRound}ラウンド - 受領完了`;
         modalBody.innerHTML = `
             <div class="modal-info success">
-                <p style="font-size: 18px; margin-bottom: 15px;">📦 <strong>本周收到货物: ${arrived} 件</strong></p>
+                <p style="font-size: 18px; margin-bottom: 15px;">📦 <strong>今週受領した商品: ${arrived}個</strong></p>
                 <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-                <p>📊 当前库存: <strong>${playerRoleObj.inventory}</strong> 件</p>
-                <p>⚠️ 累计缺货: <strong>${playerRoleObj.backorder}</strong> 件</p>
-                <p>📋 本周需求: <strong>${playerRoleObj.currentDemand}</strong> 件</p>
+                <p>📊 現在の在庫: <strong>${playerRoleObj.inventory}</strong>個</p>
+                <p>⚠️ 累計欠品: <strong>${playerRoleObj.backorder}</strong>個</p>
+                <p>📋 今週の需要: <strong>${playerRoleObj.currentDemand}</strong>個</p>
             </div>
             <p style="text-align: center; color: #666; margin-top: 15px;">
-                点击确认进入主操作界面
+                確認をクリックしてメイン操作画面へ
             </p>
         `;
         
-        modalBtn.textContent = '确认 → 进入操作';
+        modalBtn.textContent = '確認 → 操作へ';
         modalBtn.onclick = () => {
             modal.style.display = 'none';
             this.currentPhase = 'operation';
@@ -535,12 +603,8 @@ function updateMainUI() {
         : game.transportDelay + game.receivingTime;
     document.getElementById('delayDisplay').textContent = delayTime;
     
-    // 默认订货值：工厂为空（必须手动填写），其他角色设为上回合需求
-    if (isFactory) {
-        document.getElementById('orderInput').value = '';
-    } else {
-        document.getElementById('orderInput').value = role.currentDemand || 4;
-    }
+    // 所有角色的订货/生产数量初始为空，需要手动填写
+    document.getElementById('orderInput').value = '';
 
     // 更新运输可视化
     updateTransitTimeline();
@@ -650,13 +714,13 @@ function confirmShipping() {
     const shipAmount = parseInt(document.getElementById('shipInput').value) || 0;
     
     if (shipAmount < 0) {
-        alert('发货数量不能为负数！');
+        alert('出荷数量は負の数にできません！');
         return;
     }
     
     const role = game.roles[game.playerRole];
     if (shipAmount > role.inventory) {
-        alert('发货数量不能超过库存！');
+        alert('出荷数量は在庫を超えられません！');
         return;
     }
     
