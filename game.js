@@ -535,8 +535,12 @@ function updateMainUI() {
         : game.transportDelay + game.receivingTime;
     document.getElementById('delayDisplay').textContent = delayTime;
     
-    // 默认订货值设为上回合需求
-    document.getElementById('orderInput').value = role.currentDemand || 4;
+    // 默认订货值：工厂为空（必须手动填写），其他角色设为上回合需求
+    if (isFactory) {
+        document.getElementById('orderInput').value = '';
+    } else {
+        document.getElementById('orderInput').value = role.currentDemand || 4;
+    }
 
     // 更新运输可视化
     updateTransitTimeline();
@@ -665,10 +669,21 @@ function confirmShipping() {
 function confirmOrder() {
     if (!game) return;
     
-    const orderAmount = parseInt(document.getElementById('orderInput').value) || 0;
+    const orderInput = document.getElementById('orderInput');
+    const orderAmount = parseInt(orderInput.value);
+    
+    // 检查是否为空（特别是工厂必须填写）
+    if (orderInput.value === '' || isNaN(orderAmount)) {
+        const isFactory = game.playerRole === 'factory';
+        const roleText = isFactory ? '生産数量' : '発注数量';
+        alert(`${roleText}を入力してください！`);
+        return;
+    }
     
     if (orderAmount < 0) {
-        alert('订货数量不能为负数！');
+        const isFactory = game.playerRole === 'factory';
+        const errorText = isFactory ? '生産数量は負の数にできません！' : '発注数量は負の数にできません！';
+        alert(errorText);
         return;
     }
     
