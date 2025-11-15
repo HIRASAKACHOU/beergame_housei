@@ -8,6 +8,7 @@ class Role {
         this.inventory = 12; // 初期在庫
         this.backorder = 0; // 欠品量
         this.inTransit = []; // 輸送中の商品キュー
+        this.receiving = []; // 入荷処理中の商品キュー
         this.incomingOrders = []; // 受注キュー
         this.currentDemand = 0; // 現在の需要
         this.totalCost = 0; // 累計コスト
@@ -150,18 +151,12 @@ class BeerGame {
                 // 工場: 初期在庫4、生産時間に応じた生産中の商品
                 role.inventory = 4;
                 role.inTransit = Array(this.productionTime).fill(4);
+                role.receiving = []; // 工場は入荷処理なし
             } else {
-                // その他の役割: 初期在庫12、輸送遅延+入荷時間に応じた輸送中の商品
+                // その他の役割: 初期在庫12、入荷処理中4、輸送中4
                 role.inventory = 12;
-                const totalDelay = this.transportDelay + this.receivingTime;
-                // 輸送中に4、入荷予定に4を設定
-                if (totalDelay === 2) {
-                    role.inTransit = [4, 4]; // [入荷予定, 輸送中]
-                } else if (totalDelay === 1) {
-                    role.inTransit = [4]; // [入荷予定]
-                } else {
-                    role.inTransit = Array(totalDelay).fill(4);
-                }
+                role.receiving = [4]; // 入荷処理中: 4個
+                role.inTransit = [4]; // 輸送中: 4個
             }
         });
 
@@ -197,89 +192,59 @@ class BeerGame {
         const playerRoleObj = this.roles[this.playerRole];
         const isFactory = this.playerRole === 'factory';
         
-        // 检查是否有货物到达（但尚未入库）
-        let arrived = 0;
+        // 步骤1: 运输中的货物 → 入荷处理区
+        let arrivedToReceiving = 0;
         if (playerRoleObj.inTransit.length > 0) {
-            arrived = playerRoleObj.inTransit.shift() || 0;
-        }
-        
-        // 如果不是工厂且有货物到达，显示入荷流程窗口
-        if (!isFactory && arrived > 0) {
-            this.showReceivingProcess(arrived);
-        } else {
-            // 工厂直接入库，或没有货物到达
-            if (arrived > 0) {
-                playerRoleObj.receiveGoods(arrived);
+            arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
+            if (arrivedToReceiving > 0) {
+                playerRoleObj.receiving.push(arrivedToReceiving);
             }
-            this.roundHistory.received = arrived;
-            
-            // AI也收货
-            Object.values(this.roles).forEach(role => {
-                if (!role.isPlayer && role.inTransit.length > 0) {
-                    const aiArrived = role.inTransit.shift() || 0;
-                    role.receiveGoods(aiArrived);
-                }
-            });
-            
-            // 显示回合开始确认窗口
-            this.showRoundStartModal(arrived);
         }
-    }
-    
-    // 显示入荷流程窗口（仅非工厂角色）
-    showReceivingProcess(arrived) {
-        const playerRoleObj = this.roles[this.playerRole];
         
-        // 更新UI
-        updateMainUI();
-        
-        // 显示入荷流程弹窗
-        const modal = document.getElementById('phaseModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalBody = document.getElementById('modalBody');
-        const modalBtn = document.getElementById('modalConfirmBtn');
-        
-        modalTitle.textContent = `第${this.currentRound}ラウンド - 入荷処理中`;
-        modalBody.innerHTML = `
-            <div class="modal-info warning" style="background: #fff7ed; border-left: 4px solid #f59e0b;">
-                <p style="font-size: 18px; margin-bottom: 15px;">🚛 <strong>商品が到着しました: ${arrived}個</strong></p>
-                <hr style="margin: 15px 0; border: none; border-top: 1px solid #fed7aa;">
-                <p style="font-size: 16px; color: #92400e; margin: 10px 0;">
-                    📥 入荷処理を行っています...
-                </p>
-                <p style="font-size: 14px; color: #666; margin-top: 15px;">
-                    入荷時間: ${game.receivingTime}ラウンド
-                </p>
-            </div>
-            <p style="text-align: center; color: #666; margin-top: 15px;">
-                確認をクリックして在庫に追加
-            </p>
-        `;
-        
-        modalBtn.textContent = '入荷確認 → 在庫へ';
-        modalBtn.onclick = () => {
-            // 入库
-            playerRoleObj.receiveGoods(arrived);
-            this.roundHistory.received = arrived;
-            
-            // AI也收货
-            Object.values(this.roles).forEach(role => {
-                if (!role.isPlayer && role.inTransit.length > 0) {
-                    const aiArrived = role.inTransit.shift() || 0;
-                    role.receiveGoods(aiArrived);
+        // AI角色：运输 → 入荷
+        Object.values(this.roles).forEach(role => {
+            if (!role.isPlayer && role.inTransit.length > 0) {
+                const aiArrived = role.inTransit.shift() || 0;
+                if (aiArrived > 0) {
+                    if (role.type === 'factory') {
+                        // 工厂直接入库（生产完成）
+                        role.receiveGoods(aiArrived);
+                    } else {
+                        role.receiving.push(aiArrived);
+                    }
                 }
-            });
-            
-            // 显示回合开始确认窗口
-            this.showRoundStartModal(arrived);
-        };
+            }
+        });
         
-        modal.style.display = 'flex';
+        // 步骤2: 入荷处理区的货物 → 库存
+        let receivedToInventory = 0;
+        if (playerRoleObj.receiving.length > 0) {
+            receivedToInventory = playerRoleObj.receiving.shift() || 0;
+            playerRoleObj.receiveGoods(receivedToInventory);
+        }
+        
+        this.roundHistory.received = receivedToInventory;
+        
+        // AI角色：入荷 → 库存
+        Object.values(this.roles).forEach(role => {
+            if (!role.isPlayer && role.receiving.length > 0) {
+                const toInventory = role.receiving.shift() || 0;
+                role.receiveGoods(toInventory);
+            }
+        });
+        
+        // 显示回合开始确认窗口（合并显示所有信息）
+        this.showRoundStartModal(receivedToInventory, arrivedToReceiving);
     }
     
     // 显示回合开始确认窗口
-    showRoundStartModal(arrived) {
+    showRoundStartModal(receivedToInventory, arrivedToReceiving) {
         const playerRoleObj = this.roles[this.playerRole];
+        
+        // 如果不是第一回合，先处理上一回合的订单（上游发货）
+        if (this.currentRound > 1) {
+            this.processUpstreamShipments();
+        }
         
         // 设置需求
         this.updateDemand();
@@ -293,30 +258,46 @@ class BeerGame {
         const modalBody = document.getElementById('modalBody');
         const modalBtn = document.getElementById('modalConfirmBtn');
         
-        modalTitle.textContent = `第${this.currentRound}ラウンド - 受領完了`;
+        const isFactory = this.playerRole === 'factory';
+        const demand = playerRoleObj.currentDemand;
+        const totalDemand = demand + playerRoleObj.backorder;
+        
+        // 计算当前状态
+        const currentInventory = playerRoleObj.inventory;
+        const inReceiving = playerRoleObj.receiving.length > 0 ? playerRoleObj.receiving[0] : 0;
+        const inTransit = playerRoleObj.inTransit.length > 0 ? playerRoleObj.inTransit[0] : 0;
+        
+        modalTitle.textContent = `第${this.currentRound}ラウンド開始`;
+        
+        let statusHTML = '';
+        if (receivedToInventory > 0) {
+            statusHTML += `<p style="font-size: 18px; margin: 10px 0;">📦 <strong>在庫に追加: ${receivedToInventory}個</strong></p>`;
+        }
+        if (arrivedToReceiving > 0) {
+            statusHTML += `<p style="font-size: 18px; margin: 10px 0;">🚛 <strong>入荷処理中: ${arrivedToReceiving}個</strong></p>`;
+        }
+        
+        // 如果没有任何货物移动，显示提示
+        if (receivedToInventory === 0 && arrivedToReceiving === 0) {
+            statusHTML = `<p style="font-size: 16px; color: #999; text-align: center; margin: 20px 0;">商品の移動はありません</p>`;
+        }
+        
         modalBody.innerHTML = `
-            <div class="modal-info success">
-                <p style="font-size: 18px; margin-bottom: 15px;">📦 <strong>今週受領した商品: ${arrived}個</strong></p>
-                <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-                <p>📊 現在の在庫: <strong>${playerRoleObj.inventory}</strong>個</p>
-                <p>⚠️ 累計欠品: <strong>${playerRoleObj.backorder}</strong>個</p>
-                <p>📋 今週の需要: <strong>${playerRoleObj.currentDemand}</strong>個</p>
+            <div class="modal-info">
+                ${statusHTML}
             </div>
-            <p style="text-align: center; color: #666; margin-top: 15px;">
-                確認をクリックしてメイン操作画面へ
-            </p>
         `;
         
-        modalBtn.textContent = '確認 → 操作へ';
+        modalBtn.textContent = '出荷フェーズへ';
         modalBtn.onclick = () => {
             modal.style.display = 'none';
-            this.currentPhase = 'operation';
+            this.currentPhase = 'ship';
             updateMainUI();
         };
         
         modal.style.display = 'flex';
     }
-    
+
     // 更新需求
     updateDemand() {
         const playerRoleObj = this.roles[this.playerRole];
@@ -377,7 +358,12 @@ class BeerGame {
         
         const playerRoleObj = this.roles[this.playerRole];
         playerRoleObj.placeOrder(orderAmount);
-        playerRoleObj.inTransit.push(orderAmount);
+        
+        // 注意：订单不会立即处理，而是等到下一回合开始时上游才发货
+        // 工厂特殊处理：直接加入生产队列
+        if (this.playerRole === 'factory') {
+            playerRoleObj.inTransit.push(orderAmount);
+        }
         
         this.roundHistory.ordered = orderAmount;
         this.orderingConfirmed = true;
@@ -385,9 +371,38 @@ class BeerGame {
         // AI订货
         this.executeAIOrders();
         
-        // 不在这里计算成本，等到回合结束时计算
+        // 注意：不在这里处理上游发货，而是在下一回合开始时处理
         
         return true;
+    }
+    
+    // 处理上游向各角色发货
+    processUpstreamShipments() {
+        const roleOrder = ['factory', 'supplier1', 'supplier2', 'retailer'];
+        
+        roleOrder.forEach((roleKey, index) => {
+            if (index === 0) return; // 工厂没有上游，跳过
+            
+            const role = this.roles[roleKey];
+            const upstreamKey = roleOrder[index - 1];
+            const upstreamRole = this.roles[upstreamKey];
+            
+            // 获取本角色的订单量
+            const orderAmount = role.lastOrder || 0;
+            
+            // 上游根据订单量和库存发货
+            const shipAmount = Math.min(orderAmount, upstreamRole.inventory);
+            upstreamRole.inventory -= shipAmount;
+            
+            // 发出的货物进入运输队列
+            role.inTransit.push(shipAmount);
+            
+            // 如果上游库存不足，产生缺货
+            const shortage = orderAmount - shipAmount;
+            if (shortage > 0) {
+                upstreamRole.backorder += shortage;
+            }
+        });
     }
     
     // 完成回合
@@ -418,17 +433,10 @@ class BeerGame {
             const role = this.roles[roleKey];
             if (role.isPlayer) return;
             
-            // 确定需求
-            let demand = 0;
-            if (roleKey === 'retailer') {
-                demand = this.customerDemand[this.currentRound - 1] || 0;
-            } else if (index < roleOrder.length - 1) {
-                const downstreamKey = roleOrder[index + 1];
-                const downstreamRole = this.roles[downstreamKey];
-                demand = downstreamRole.lastOrder || 0;
-            }
+            // 确定本回合的需求（使用currentDemand，不读取lastOrder）
+            let demand = role.currentDemand || 0;
             
-            role.currentDemand = demand;
+            // 计算总需求（包括之前的缺货）
             const totalDemand = demand + role.backorder;
             const shipped = Math.min(totalDemand, role.inventory);
             
@@ -466,7 +474,11 @@ class BeerGame {
             if (!role.isPlayer) {
                 const orderAmount = AIStrategy.makeDecision(role, role.currentDemand || 4);
                 role.placeOrder(orderAmount);
-                role.inTransit.push(orderAmount);
+                // 注意：不直接加入inTransit，等上游发货
+                // 工厂特殊处理：直接加入生产队列
+                if (roleKey === 'factory') {
+                    role.inTransit.push(orderAmount);
+                }
             }
         });
     }
@@ -549,10 +561,10 @@ function updateMainUI() {
 
     const role = game.roles[game.playerRole];
     const roleNames = {
-        'retailer': '🏪 零售商',
-        'supplier2': '📦 二级供应商',
-        'supplier1': '🚚 一级供应商',
-        'factory': '🏭 工厂'
+        'retailer': '🏪 小売業者',
+        'supplier2': '📦 二次卸売業者',
+        'supplier1': '🚚 一次卸売業者',
+        'factory': '🏭 工場'
     };
 
     // 更新回合信息
@@ -606,6 +618,9 @@ function updateMainUI() {
     // 所有角色的订货/生产数量初始为空，需要手动填写
     document.getElementById('orderInput').value = '';
 
+    // 更新入荷処理区
+    updateReceivingArea();
+
     // 更新运输可视化
     updateTransitTimeline();
 
@@ -625,7 +640,7 @@ function updateTransitTimeline() {
     timeline.innerHTML = '';
     
     if (role.inTransit.length === 0) {
-        timeline.innerHTML = '<p style="color: #999; text-align: center; width: 100%;">暂无运输中的货物</p>';
+        timeline.innerHTML = '<p style="color: #999; text-align: center; width: 100%;">輸送中の商品がありません</p>';
         return;
     }
     
@@ -640,12 +655,46 @@ function updateTransitTimeline() {
         const arrivalRound = game.currentRound + roundsLeft;
         
         item.innerHTML = `
-            <div class="transit-round">${index === 0 ? '下回合到达' : `${roundsLeft}回合后`}</div>
+            <div class="transit-round">${index === 0 ? '次ラウンド到着' : `${roundsLeft}ラウンド後`}</div>
             <div class="transit-amount">${amount}</div>
-            <div style="font-size: 12px; color: #999;">第${arrivalRound}回合</div>
+            <div style="font-size: 12px; color: #999;">第${arrivalRound}ラウンド</div>
         `;
         timeline.appendChild(item);
     });
+}
+
+// 更新入荷処理区
+function updateReceivingArea() {
+    if (!game) return;
+    
+    const role = game.roles[game.playerRole];
+    const isFactory = game.playerRole === 'factory';
+    const receivingArea = document.getElementById('receivingTimeline');
+    
+    // 工厂不显示入荷处理区
+    if (isFactory) {
+        receivingArea.innerHTML = '<p style="color: #999; text-align: center; font-size: 14px;">工場は入荷処理なし</p>';
+        return;
+    }
+    
+    receivingArea.innerHTML = '';
+    
+    // 显示入荷处理中的商品（receiving数组）
+    if (role.receiving.length > 0) {
+        role.receiving.forEach((amount, index) => {
+            const item = document.createElement('div');
+            item.className = 'receiving-item';
+            item.innerHTML = `
+                <div class="receiving-label">入荷処理中</div>
+                <div class="receiving-amount">${amount}</div>
+                <div class="receiving-label">個</div>
+                <div style="font-size: 12px; color: #999; margin-top: 5px;">次ラウンド在庫へ</div>
+            `;
+            receivingArea.appendChild(item);
+        });
+    } else {
+        receivingArea.innerHTML = '<p style="color: #999; text-align: center; font-size: 14px;">入荷処理中の商品がありません</p>';
+    }
 }
 
 // 更新历史表格
@@ -656,7 +705,7 @@ function updateHistoryTable() {
     tbody.innerHTML = '';
     
     if (game.history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">暂无历史记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">履歴がありません</td></tr>';
         return;
     }
     
@@ -783,9 +832,9 @@ function showResults() {
         const card = document.createElement('div');
         card.className = index === 0 ? 'score-card winner' : 'score-card';
         card.innerHTML = `
-            <h3>${score.name} ${score.isPlayer ? '(你)' : ''}</h3>
-            <div class="final-cost">${score.cost} 元</div>
-            <div>${index === 0 ? '🏆 最佳表现' : `第 ${index + 1} 名`}</div>
+            <h3>${score.name} ${score.isPlayer ? '(あなた)' : ''}</h3>
+            <div class="final-cost">${score.cost} 円</div>
+            <div>${index === 0 ? '🏆 最優秀' : `第 ${index + 1} 位`}</div>
         `;
         scoresContainer.appendChild(card);
     });
