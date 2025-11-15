@@ -740,7 +740,7 @@ function updateButtonStates() {
         shipBtn.disabled = true;
         orderBtn.disabled = true;
         nextBtn.disabled = true;
-    } else if (game.currentPhase === 'operation') {
+    } else if (game.currentPhase === 'ship') {
         shipBtn.disabled = game.shippingConfirmed;
         orderBtn.disabled = !game.shippingConfirmed || game.orderingConfirmed;
         nextBtn.disabled = !game.shippingConfirmed || !game.orderingConfirmed;
