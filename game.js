@@ -18,7 +18,9 @@ class Role {
         this.lastOrder = 0; // 前回の発注量
     }
 
-    // 商品受領
+    /            <div class="transit-round">${index === 0 ? '次週到着' : `${roundsLeft}週後`}</div>
+            <div class="transit-amount">${amount}個</div>
+            <div style="font-size: 12px; color: #999;">第${arrivalRound}週</div>品受領
     receiveGoods(amount) {
         this.inventory += amount;
     }
@@ -140,7 +142,7 @@ class BeerGame {
             }
         });
 
-        // 顧客需要シーケンスの生成（最初の4ラウンドは需要4、その後は需要8）
+        // 顧客需要シーケンスの生成（最初の4週は需要4、その後は需要8）
         this.customerDemand = Array(4).fill(4).concat(Array(this.totalRounds - 4).fill(8));
 
         // 各役割の初期在庫と輸送中の商品を設定
@@ -164,11 +166,11 @@ class BeerGame {
         this.currentRound = 1;
         this.currentPhase = 'receive';
         
-        // 最初のラウンドを開始
+        // 最初の週を開始
         this.startRound();
     }
 
-    // 新しいラウンドを開始
+    // 新しい週を開始
     startRound() {
         this.currentPhase = 'receive';
         this.roundHistory = {
@@ -268,7 +270,7 @@ class BeerGame {
         const inReceiving = playerRoleObj.receiving.length > 0 ? playerRoleObj.receiving[0] : 0;
         const inTransit = playerRoleObj.inTransit.length > 0 ? playerRoleObj.inTransit[0] : 0;
         
-        modalTitle.textContent = `第${this.currentRound}ラウンド開始`;
+        modalTitle.textContent = `第${this.currentRound}週開始`;
         
         let statusHTML = '';
         if (receivedToInventory > 0) {
@@ -659,9 +661,9 @@ function updateTransitTimeline() {
         const arrivalRound = game.currentRound + roundsLeft;
         
         item.innerHTML = `
-            <div class="transit-round">${index === 0 ? '次ラウンド到着' : `${roundsLeft}ラウンド後`}</div>
+            <div class="transit-round">${index === 0 ? '次週到着' : `${roundsLeft}週後`}</div>
             <div class="transit-amount">${amount}</div>
-            <div style="font-size: 12px; color: #999;">第${arrivalRound}ラウンド</div>
+            <div style="font-size: 12px; color: #999;">第${arrivalRound}週</div>
         `;
         timeline.appendChild(item);
     });
@@ -692,7 +694,7 @@ function updateReceivingArea() {
                 <div class="receiving-label">入荷処理中</div>
                 <div class="receiving-amount">${amount}</div>
                 <div class="receiving-label">個</div>
-                <div style="font-size: 12px; color: #999; margin-top: 5px;">次ラウンド在庫へ</div>
+                <div style="font-size: 12px; color: #999; margin-top: 5px;">次週在庫へ</div>
             `;
             receivingArea.appendChild(item);
         });

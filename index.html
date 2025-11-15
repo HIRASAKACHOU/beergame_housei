@@ -1,5 +1,14 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html                <h3>総週数</h3>
+                <div class="round-options">
+                    <button class="round-btn" data-rounds="20">20週</button>
+                    <button class="round-                    <h3>📊 週履歴</h3>
+                    <div class="table-container">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>週</th>lected" data-rounds="30">30週</button>
+                    <button class="round-btn" data-rounds="40">40週</button>="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,8 +20,8 @@
         <header>
             <h1>🍺 ビールゲーム - シングルプレイヤーモード</h1>
             <div class="game-info">
-                <span>ラウンド: <strong id="currentRound">0</strong></span>
-                <span>総ラウンド数: <strong id="totalRounds">30</strong></span>
+                <span>週: <strong id="currentRound">0</strong></span>
+                <span>総週数: <strong id="totalRounds">30</strong></span>
             </div>
         </header>
 
@@ -110,7 +119,7 @@
         <!-- ゲームフェーズモーダル -->
         <div class="modal" id="phaseModal" style="display: none;">
             <div class="modal-content">
-                <h2 id="modalTitle">ラウンド開始</h2>
+                <h2 id="modalTitle">週開始</h2>
                 <div id="modalBody"></div>
                 <div class="modal-actions">
                     <button class="modal-btn primary" id="modalConfirmBtn">確認</button>
@@ -131,7 +140,7 @@
                     </div>
                     <div class="header-right">
                         <button class="control-btn next-round-btn" id="nextRoundMainBtn" onclick="nextRoundMain()" disabled>
-                            次のラウンド ➔
+                            次の週 ➔
                         </button>
                         <button class="control-btn reset-btn-small" onclick="resetGame()">リセット</button>
                     </div>
@@ -171,7 +180,7 @@
                     <div class="operation-section order-section">
                         <h3 id="orderSectionTitle">📝 発注エリア</h3>
                         <div class="order-info">
-                            <p class="delay-info">📅 遅延: <strong id="delayDisplay">2</strong> ラウンド後に到着</p>
+                            <p class="delay-info">📅 遅延: <strong id="delayDisplay">2</strong> 週後に到着</p>
                             <p style="color: #666; font-size: 14px; margin-top: 10px;">
                                 💡 在庫と需要に基づいて発注量を決定してください
                             </p>
