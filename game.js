@@ -319,11 +319,14 @@ class BeerGame {
         const playerRoleObj = this.roles[this.playerRole];
         const isFactory = this.playerRole === 'factory';
         
+        console.log(`\n========== 第 ${this.currentRound} 回合开始 ==========`);
+        
         // 步骤1: 入荷处理区的货物 → 库存（先处理上一回合到达的）
         let receivedToInventory = 0;
         if (playerRoleObj.receiving.length > 0) {
             receivedToInventory = playerRoleObj.receiving.shift() || 0;
             playerRoleObj.receiveGoods(receivedToInventory);
+            console.log(`玩家 ${playerRoleObj.name} 入荷: ${receivedToInventory}, 库存变化: ${playerRoleObj.inventory - receivedToInventory} → ${playerRoleObj.inventory}`);
         }
         
         this.roundHistory.received = receivedToInventory;
@@ -333,6 +336,7 @@ class BeerGame {
             if (!role.isPlayer && role.receiving.length > 0) {
                 const toInventory = role.receiving.shift() || 0;
                 role.receiveGoods(toInventory);
+                console.log(`AI ${role.name} 入荷: ${toInventory}, 库存: ${role.inventory}`);
             }
         });
         
@@ -342,6 +346,7 @@ class BeerGame {
             arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
             if (arrivedToReceiving > 0) {
                 playerRoleObj.receiving.push(arrivedToReceiving);
+                console.log(`玩家 ${playerRoleObj.name} 运输到达: ${arrivedToReceiving}, 进入入荷处理中`);
             }
         }
         
@@ -353,8 +358,10 @@ class BeerGame {
                     if (role.type === 'factory') {
                         // 工厂直接入库（生产完成）
                         role.receiveGoods(aiArrived);
+                        console.log(`${role.name} 生产完成: ${aiArrived}, 库存: ${role.inventory}`);
                     } else {
                         role.receiving.push(aiArrived);
+                        console.log(`${role.name} 运输到达: ${aiArrived}, 进入入荷处理中`);
                     }
                 }
             }
@@ -517,6 +524,7 @@ class BeerGame {
     // 处理上游向各角色发货
     processUpstreamShipments() {
         const roleOrder = ['factory', 'supplier1', 'supplier2', 'retailer'];
+        console.log(`[Round ${this.currentRound}] processUpstreamShipments 开始`);
         
         roleOrder.forEach((roleKey, index) => {
             if (index === 0) return; // 工厂没有上游，跳过
@@ -533,15 +541,20 @@ class BeerGame {
             const shipAmount = Math.min(orderAmount, upstreamRole.inventory);
             upstreamRole.inventory -= shipAmount;
             
+            console.log(`  ${upstreamRole.name} 向 ${role.name} 发货: 订单=${orderAmount}, 实发=${shipAmount}`);
+            
             // 发出的货物进入运输队列
             role.inTransit.push(shipAmount);
+            console.log(`  ${role.name}.inTransit 更新: [${role.inTransit}]`);
             
             // 如果上游库存不足，产生缺货
             const shortage = orderAmount - shipAmount;
             if (shortage > 0) {
                 upstreamRole.backorder += shortage;
+                console.log(`  ${upstreamRole.name} 缺货: ${shortage}, 总缺货=${upstreamRole.backorder}`);
             }
         });
+        console.log(`[Round ${this.currentRound}] processUpstreamShipments 结束`);
     }
     
     // 完成回合
