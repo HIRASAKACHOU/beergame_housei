@@ -501,8 +501,16 @@ class BeerGame {
             const upstreamKey = roleOrder[index - 1];
             const upstreamRole = this.roles[upstreamKey];
             
-            // 获取本角色的订单量
-            const orderAmount = role.lastOrder || 0;
+            // 获取本角色的需求量（不是订单，而是实际需求）
+            // Retailer 的需求来自客户，其他角色的需求来自下游的订单
+            let orderAmount = 0;
+            if (roleKey === 'retailer') {
+                // Retailer 的需求是当前客户需求
+                orderAmount = role.currentDemand || 0;
+            } else {
+                // 其他角色的需求是下游的订单
+                orderAmount = role.lastOrder || 0;
+            }
             
             // 上游根据订单量和库存发货
             const shipAmount = Math.min(orderAmount, upstreamRole.inventory);
