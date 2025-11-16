@@ -1,20 +1,20 @@
 {
-  "version": "0.8",
+  "version": "0.9",
   "versionHistory": {
+    "0.9": {
+      "date": "2025-11-16",
+      "type": "feature",
+      "description": "AI行動パターンを共通ロジック設計に刷新"
+    },
     "0.8": {
       "date": "2025-11-16",
       "type": "feature",
-      "description": "AI システムのパラメータ化実装"
+      "description": "自動バージョン管理システムを追加"
     },
     "0.7": {
       "date": "2025-11-15",
       "type": "feature",
-      "description": "UI改進：トースト通知とアニメーション"
-    },
-    "0.6": {
-      "date": "2025-11-10",
-      "type": "refactor",
-      "description": "術語統一：ラウンド→週"
+      "description": "UI改善とアニメーション追加"
     }
   },
   "versioningRules": {
