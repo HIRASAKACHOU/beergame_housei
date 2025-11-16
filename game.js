@@ -590,7 +590,7 @@ class BeerGame {
         
         roleOrder.forEach((roleKey, index) => {
             const role = this.roles[roleKey];
-            if (role.isPlayer) return;
+            if (role.isPlayer) return; // ✅ 玩家角色不在此处理（已在confirmShipping中处理）
             
             // 需要发送的总量 = 当期需求 + 累积缺货
             let demand = role.currentDemand || 0;
@@ -619,6 +619,7 @@ class BeerGame {
             role.shippedThisRound = shipped; // 记录本周发货量
             
             // 更新缺货：如果发货不足，剩余的需求转为缺货
+            // ✅ 这里只更新AI角色的backorder，不会影响玩家
             role.backorder = Math.max(0, totalNeed - shipped);
         });
     }
