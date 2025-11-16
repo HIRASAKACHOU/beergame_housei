@@ -640,14 +640,21 @@ class BeerGame {
         Object.keys(this.roles).forEach(roleKey => {
             const role = this.roles[roleKey];
             if (!role.isPlayer) {
-                // 平均需要を計算（過去の発注履歴から）
-                const avgDemand = role.orderHistory.length > 0
-                    ? role.orderHistory.reduce((a, b) => a + b, 0) / role.orderHistory.length
-                    : (role.currentDemand || 4);
+                // 计算平均需要：根据发货历史
+                let avgDemand = 4; // 默认值
+                if (role.orderHistory.length > 0) {
+                    avgDemand = role.orderHistory.reduce((a, b) => a + b, 0) / role.orderHistory.length;
+                }
+                
+                // 计算需要量：如果当前需要为0且不是零售商，则使用默认值4
+                let demand = role.currentDemand;
+                if (demand === 0 && roleKey !== 'retailer') {
+                    demand = 4;
+                }
                 
                 const orderAmount = AIStrategy.makeDecision(
                     role,
-                    role.currentDemand || 4,
+                    demand,
                     avgDemand,
                     this.aiParams
                 );
