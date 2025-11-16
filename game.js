@@ -734,12 +734,13 @@ function updateMainUI() {
     document.getElementById('backorderDisplay').textContent = role.backorder;
 
     // 更新发货区
-    const totalDemand = role.currentDemand + role.backorder;
+    // 出荷必要数 = 発注残（累積缺货），不需要加上当期需求（当期需求会自动加入発注残）
+    const shippingNeed = role.backorder;
     document.getElementById('demandDisplay').textContent = role.currentDemand;
     document.getElementById('backorderNeedDisplay').textContent = role.backorder;
-    document.getElementById('totalNeedDisplay').textContent = totalDemand;
+    document.getElementById('totalNeedDisplay').textContent = shippingNeed;
     
-    const maxShip = Math.min(totalDemand, role.inventory);
+    const maxShip = Math.min(shippingNeed, role.inventory);
     document.getElementById('shipInput').value = maxShip;
     document.getElementById('shipInput').max = role.inventory;
 
