@@ -126,6 +126,10 @@ class AIStrategy {
             noiseLevel
         } = profile;
 
+        // 防护：确保 demand 和 avgDemand 是有效的数字
+        demand = isNaN(demand) || demand === null ? 4 : demand;
+        avgDemand = isNaN(avgDemand) || avgDemand === null ? 4 : avgDemand;
+
         // 1) 需要予測（直近と平均のハイブリッド：60%直近 + 40%平均）
         // ただし、平均需要を上限とする（指数級増加を防ぐ）
         const forecast = 0.6 * demand + 0.4 * (avgDemand ?? demand);
