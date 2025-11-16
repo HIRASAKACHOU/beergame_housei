@@ -474,8 +474,17 @@ class BeerGame {
         // 即：玩家最多发库存量，但不应超过实际需求（避免过度发货）
         const maxCanShip = Math.min(shipAmount, playerRoleObj.inventory, totalNeed);
         
-        // 发货
-        playerRoleObj.inventory -= maxCanShip;
+        // ✅ 改变逻辑：发货 = 创建下游的运输队列，而非直接减库存
+        // 玩家角色发货时，将货物加入到下游角色的 inTransit
+        const downstreamRole = this.getDownstreamRole(this.playerRole);
+        if (downstreamRole && maxCanShip > 0) {
+            // 从库存减少
+            playerRoleObj.inventory -= maxCanShip;
+            // 进入下游的运输队列（下一回合才会到达receiving）
+            downstreamRole.inTransit.push(maxCanShip);
+            console.log(`玩家 ${playerRoleObj.name} 出荷: ${maxCanShip}, 进入 ${downstreamRole.name} の運送中`);
+        }
+        
         playerRoleObj.shippedThisRound = maxCanShip; // 记录本周发货量
         
         // 更新缺货
@@ -489,8 +498,6 @@ class BeerGame {
         
         // AI发货
         this.executeAIShipping();
-        
-        // 不在这里处理上游发货
         
         return true;
     }
@@ -514,48 +521,13 @@ class BeerGame {
         // AI订货
         this.executeAIOrders();
         
-        // 玩家订货确认后，处理上游发货（上游根据当前回合下游的订单发货）
-        // 这样可以确保 retailer.lastOrder 已经被设置
-        this.processUpstreamShipments();
+        // ✅ 不在确认订货时处理上游发货！
+        // 上游的发货应该通过「出荷」动作来执行
         
         return true;
     }
     
-    // 处理上游向各角色发货
-    processUpstreamShipments() {
-        const roleOrder = ['factory', 'supplier1', 'supplier2', 'retailer'];
-        console.log(`[Round ${this.currentRound}] processUpstreamShipments 开始`);
-        
-        roleOrder.forEach((roleKey, index) => {
-            if (index === 0) return; // 工厂没有上游，跳过
-            // ✅ 不再跳过 retailer！retailer 也需要接收来自 supplier2 的发货
-            
-            const role = this.roles[roleKey];
-            const upstreamKey = roleOrder[index - 1];
-            const upstreamRole = this.roles[upstreamKey];
-            
-            // 获取本角色的订单量（来自下游的订单，即该角色的 lastOrder）
-            const orderAmount = role.lastOrder || 0;
-            
-            // 上游根据订单量和库存发货
-            const shipAmount = Math.min(orderAmount, upstreamRole.inventory);
-            upstreamRole.inventory -= shipAmount;
-            
-            console.log(`  ${upstreamRole.name} 向 ${role.name} 发货: 订单=${orderAmount}, 实发=${shipAmount}`);
-            
-            // 发出的货物进入运输队列
-            role.inTransit.push(shipAmount);
-            console.log(`  ${role.name}.inTransit 更新: [${role.inTransit}]`);
-            
-            // 如果上游库存不足，产生缺货
-            const shortage = orderAmount - shipAmount;
-            if (shortage > 0) {
-                upstreamRole.backorder += shortage;
-                console.log(`  ${upstreamRole.name} 缺货: ${shortage}, 总缺货=${upstreamRole.backorder}`);
-            }
-        });
-        console.log(`[Round ${this.currentRound}] processUpstreamShipments 结束`);
-    }
+    // ✅ processUpstreamShipments 已删除 - 发货逻辑已移至 confirmShipping/executeAIShipping
     
     // 完成回合
     finishRound() {
@@ -608,8 +580,22 @@ class BeerGame {
             // 即：有多少发多少（但不超过需要量）
             const shipped = Math.min(totalNeed, role.inventory);
             
-            // 更新库存和缺货
-            role.inventory -= shipped;
+            // ✅ 改变逻辑：AI发货也是创建下游的运输队列
+            if (shipped > 0 && roleKey !== 'retailer') {
+                // 从库存减少
+                role.inventory -= shipped;
+                // 进入下游角色的运输队列
+                const downstreamRole = this.getDownstreamRole(roleKey);
+                if (downstreamRole) {
+                    downstreamRole.inTransit.push(shipped);
+                    console.log(`AI ${role.name} 出荷: ${shipped}, 进入 ${downstreamRole.name} の運送中`);
+                }
+            } else if (roleKey === 'retailer') {
+                // Retailer只是发货给消费者，不创建运输队列
+                role.inventory -= shipped;
+                console.log(`AI ${role.name} 零売: ${shipped}`);
+            }
+            
             role.shippedThisRound = shipped; // 记录本周发货量
             
             // 更新缺货：如果发货不足，剩余的需求转为缺货
