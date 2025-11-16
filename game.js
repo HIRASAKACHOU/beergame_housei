@@ -458,7 +458,7 @@ class BeerGame {
         // AI发货
         this.executeAIShipping();
         
-        // プレイヤーが出荷確認した後に、上流からの発送を処理
+        // 玩家发货确认后，处理上游发货（上游根据当前回合下游的订单发货）
         if (this.currentRound > 1) {
             this.processUpstreamShipments();
         }
@@ -485,7 +485,7 @@ class BeerGame {
         // AI订货
         this.executeAIOrders();
         
-        // 注意：不在这里处理上游发货，而是在下一回合开始时处理
+        // 注意：不在这里处理上游发货，而是在发货确认时处理
         
         return true;
     }
