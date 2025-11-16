@@ -294,10 +294,6 @@ class BeerGame {
                 role.receiving = [4]; // 入荷処理中: 4個
                 role.inTransit = [4]; // 輸送中: 4個
             }
-            
-            // 初期需要を設定（第1週は全て4が需要ベース）
-            role.lastOrder = 4; // 初期注文量（全角色）
-            role.orderHistory = [4]; // 注文履歴に初期値を追加
         });
 
         this.gameStarted = true;
@@ -447,8 +443,9 @@ class BeerGame {
             playerRoleObj.currentDemand = this.customerDemand[this.currentRound - 1] || 0;
         } else {
             // 从下游获取订单
+            // 第一回合时，下游还没有订单，所以需求为0
             const downstreamRole = this.getDownstreamRole(this.playerRole);
-            playerRoleObj.currentDemand = downstreamRole ? downstreamRole.lastOrder : 0;
+            playerRoleObj.currentDemand = (this.currentRound > 1 && downstreamRole) ? downstreamRole.lastOrder : 0;
         }
         
         // AI也更新需求
@@ -459,8 +456,9 @@ class BeerGame {
             if (roleKey === 'retailer') {
                 role.currentDemand = this.customerDemand[this.currentRound - 1] || 0;
             } else {
+                // 第一回合时，下游还没有订单，所以需求为0
                 const downstreamRole = this.getDownstreamRole(roleKey);
-                role.currentDemand = downstreamRole ? downstreamRole.lastOrder : 0;
+                role.currentDemand = (this.currentRound > 1 && downstreamRole) ? downstreamRole.lastOrder : 0;
             }
         });
     }
@@ -496,9 +494,7 @@ class BeerGame {
         this.executeAIShipping();
         
         // 玩家发货确认后，处理上游发货（上游根据当前回合下游的订单发货）
-        if (this.currentRound > 1) {
-            this.processUpstreamShipments();
-        }
+        this.processUpstreamShipments();
         
         return true;
     }
