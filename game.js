@@ -310,6 +310,20 @@ class BeerGame {
         this.shippingConfirmed = false;
         this.orderingConfirmed = false;
         
+        // ✅ 重置按钮状态（为新回合做准备）
+        const shipInputEl = document.getElementById('shipInput');
+        if (shipInputEl) {
+            shipInputEl.disabled = false;
+        }
+        const shipBtnEl = document.querySelector('.ship-btn');
+        if (shipBtnEl) {
+            shipBtnEl.disabled = false;
+        }
+        const maxBtnEl = document.querySelector('.max-btn');
+        if (maxBtnEl) {
+            maxBtnEl.disabled = false;
+        }
+        
         // 受領フェーズを表示
         this.showReceivePhase();
     }
@@ -325,17 +339,17 @@ class BeerGame {
         let arrivedToReceiving = 0;
         
         if (isFactory) {
-            // ✅ 工厂特殊处理：没有上游，没有入荷处理区
+            // ✅ 工厂特殊处理：没有上游，直接入库
             // 生产中的商品 → 库存（直接入库）
             if (playerRoleObj.inTransit.length > 0) {
-                arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
-                if (arrivedToReceiving > 0) {
-                    playerRoleObj.receiveGoods(arrivedToReceiving);
-                    console.log(`玩家 ${playerRoleObj.name} 生产完成: ${arrivedToReceiving}, 库存余: ${playerRoleObj.inventory}`);
+                receivedToInventory = playerRoleObj.inTransit.shift() || 0;
+                if (receivedToInventory > 0) {
+                    playerRoleObj.receiveGoods(receivedToInventory);
+                    console.log(`玩家 ${playerRoleObj.name} 生产完成: ${receivedToInventory}, 库存余: ${playerRoleObj.inventory}`);
                 }
             }
         } else {
-            // 正常角色处理：入荷 → 库存
+            // 正常角色处理：receiving → 库存
             if (playerRoleObj.receiving.length > 0) {
                 receivedToInventory = playerRoleObj.receiving.shift() || 0;
                 playerRoleObj.receiveGoods(receivedToInventory);
@@ -352,6 +366,7 @@ class BeerGame {
             }
         }
         
+        // ✅ 正确记录入荷数量（Factory也正确记录）
         this.roundHistory.received = receivedToInventory;
         
         // AI角色：入荷 → 库存
@@ -790,20 +805,41 @@ function updateMainUI() {
     document.getElementById('backorderDisplay').textContent = role.backorder;
 
     // 更新发货区
-    // 出荷必要数 = 当期需求 + 発注残（工場は発注残=0）
+    // ✅ 如果已经确认了发货，显示本周出荷数和出荷后的發注残，否则显示出荷必要数
     const isFactoryDisplay = game.playerRole === 'factory';
     const backorderForDisplay = isFactoryDisplay ? 0 : role.backorder;
-    const shippingNeed = role.currentDemand + backorderForDisplay;
-    document.getElementById('demandDisplay').textContent = role.currentDemand;
-    document.getElementById('backorderNeedDisplay').textContent = backorderForDisplay;
-    document.getElementById('totalNeedDisplay').textContent = shippingNeed;
+    
+    if (game.shippingConfirmed) {
+        // 发货后：显示本周出荷数和出荷后的發注残
+        const thisRoundShipped = game.roundHistory.shipped || 0;
+        const afterShipBackorder = game.roundHistory.backorder || 0;
+        document.getElementById('demandDisplay').textContent = `本周出荷`;
+        document.getElementById('backorderNeedDisplay').textContent = thisRoundShipped;
+        document.getElementById('totalNeedDisplay').textContent = `残: ${afterShipBackorder}`;
+        // 禁用输入框，显示已完成状态
+        document.getElementById('shipInput').disabled = true;
+        document.querySelector('.ship-btn').disabled = true;
+        document.querySelector('.max-btn').disabled = true;
+    } else {
+        // 发货前：显示出荷必要数
+        const shippingNeed = role.currentDemand + backorderForDisplay;
+        document.getElementById('demandDisplay').textContent = role.currentDemand;
+        document.getElementById('backorderNeedDisplay').textContent = backorderForDisplay;
+        document.getElementById('totalNeedDisplay').textContent = shippingNeed;
+        // 启用输入框
+        document.getElementById('shipInput').disabled = false;
+        document.querySelector('.ship-btn').disabled = false;
+        document.querySelector('.max-btn').disabled = false;
+    }
     
     // 发货推荐量 = min(需要总量, 库存)
     // 需要总量 = 当期需求 + 発注残
-    const totalNeed = role.currentDemand + backorderForDisplay;
-    const maxShip = Math.min(totalNeed, role.inventory);
-    document.getElementById('shipInput').value = maxShip;
-    document.getElementById('shipInput').max = role.inventory;
+    if (!game.shippingConfirmed) {
+        const totalNeed = role.currentDemand + backorderForDisplay;
+        const maxShip = Math.min(totalNeed, role.inventory);
+        document.getElementById('shipInput').value = maxShip;
+        document.getElementById('shipInput').max = role.inventory;
+    }
 
     // 更新订货区
     const isFactory = game.playerRole === 'factory';
@@ -846,11 +882,13 @@ function updateTransitTimeline() {
     if (!game) return;
     
     const role = game.roles[game.playerRole];
+    const isFactory = game.playerRole === 'factory';
     const timeline = document.getElementById('transitTimeline');
     timeline.innerHTML = '';
     
     if (role.inTransit.length === 0) {
-        timeline.innerHTML = '<p style="color: #999; text-align: center; width: 100%;">輸送中の商品がありません</p>';
+        const emptyMsg = isFactory ? '生産中の商品がありません' : '輸送中の商品がありません';
+        timeline.innerHTML = `<p style="color: #999; text-align: center; width: 100%;">${emptyMsg}</p>`;
         return;
     }
     
@@ -864,8 +902,17 @@ function updateTransitTimeline() {
         const roundsLeft = index + 1;
         const arrivalRound = game.currentRound + roundsLeft;
         
+        // ✅ Factory 显示"生産中"和🏭 icon，其他显示"運送中"和🚛 icon
+        const isProductionIcon = isFactory;
+        const icon = isProductionIcon ? '🏭' : '🚛';
+        const label = isProductionIcon ? '生産中' : '運送中';
+        const arrivalText = isProductionIcon ? 
+            (index === 0 ? '次週完成' : `${roundsLeft}週後`) :
+            (index === 0 ? '次週到着' : `${roundsLeft}週後`);
+        
         item.innerHTML = `
-            <div class="transit-round">${index === 0 ? '次週到着' : `${roundsLeft}週後`}</div>
+            <div style="font-size: 20px; text-align: center;">${icon}</div>
+            <div class="transit-round">${arrivalText}</div>
             <div class="transit-amount">${amount}</div>
             <div style="font-size: 12px; color: #999;">第${arrivalRound}週</div>
         `;
@@ -881,9 +928,9 @@ function updateReceivingArea() {
     const isFactory = game.playerRole === 'factory';
     const receivingArea = document.getElementById('receivingTimeline');
     
-    // 工厂不显示入荷处理区
+    // ✅ 工厂显示"直接入库"而不是"入荷处理なし"
     if (isFactory) {
-        receivingArea.innerHTML = '<p style="color: #999; text-align: center; font-size: 14px;">工場は入荷処理なし</p>';
+        receivingArea.innerHTML = '<p style="color: #999; text-align: center; font-size: 14px;">直接入庫（上游なし）</p>';
         return;
     }
     
