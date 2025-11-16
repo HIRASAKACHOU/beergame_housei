@@ -813,11 +813,11 @@ function updateMainUI() {
         // 发货后：显示本周出荷数和出荷后的發注残
         const thisRoundShipped = game.roundHistory.shipped || 0;
         const afterShipBackorder = game.roundHistory.backorder || 0;
-        document.getElementById('demandLabel').textContent = '本周出货: ';
+        if (document.getElementById('demandLabel')) document.getElementById('demandLabel').textContent = '本周出货: ';
         document.getElementById('demandDisplay').textContent = thisRoundShipped;
-        document.getElementById('backorderLabel').textContent = '発注残: ';
+        if (document.getElementById('backorderLabel')) document.getElementById('backorderLabel').textContent = '発注残: ';
         document.getElementById('backorderNeedDisplay').textContent = afterShipBackorder;
-        document.getElementById('totalNeedLabel').style.display = 'none';
+        if (document.getElementById('totalNeedLabel')) document.getElementById('totalNeedLabel').style.display = 'none';
         // 禁用输入框，显示已完成状态
         document.getElementById('shipInput').disabled = true;
         document.querySelector('.ship-btn').disabled = true;
@@ -825,12 +825,14 @@ function updateMainUI() {
     } else {
         // 发货前：显示出荷必要数
         const shippingNeed = role.currentDemand + backorderForDisplay;
-        document.getElementById('demandLabel').textContent = '今週の需要: ';
+        if (document.getElementById('demandLabel')) document.getElementById('demandLabel').textContent = '今週の需要: ';
         document.getElementById('demandDisplay').textContent = role.currentDemand;
-        document.getElementById('backorderLabel').textContent = '発注残: ';
+        if (document.getElementById('backorderLabel')) document.getElementById('backorderLabel').textContent = '発注残: ';
         document.getElementById('backorderNeedDisplay').textContent = backorderForDisplay;
-        document.getElementById('totalNeedLabel').style.display = 'block';
-        document.getElementById('totalNeedLabel').textContent = '出荷必要数: ' + shippingNeed + ' 個';
+        if (document.getElementById('totalNeedLabel')) {
+            document.getElementById('totalNeedLabel').style.display = 'block';
+            document.getElementById('totalNeedLabel').textContent = '出荷必要数: ' + shippingNeed + ' 個';
+        }
         // 启用输入框
         document.getElementById('shipInput').disabled = false;
         document.querySelector('.ship-btn').disabled = false;
