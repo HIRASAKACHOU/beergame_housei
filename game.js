@@ -477,12 +477,19 @@ class BeerGame {
         // ✅ 改变逻辑：发货 = 创建下游的运输队列，而非直接减库存
         // 玩家角色发货时，将货物加入到下游角色的 inTransit
         const downstreamRole = this.getDownstreamRole(this.playerRole);
-        if (downstreamRole && maxCanShip > 0) {
-            // 从库存减少
+        
+        if (maxCanShip > 0) {
+            // 从库存减少（所有角色都要减库存）
             playerRoleObj.inventory -= maxCanShip;
-            // 进入下游的运输队列（下一回合才会到达receiving）
-            downstreamRole.inTransit.push(maxCanShip);
-            console.log(`玩家 ${playerRoleObj.name} 出荷: ${maxCanShip}, 进入 ${downstreamRole.name} の運送中`);
+            
+            if (downstreamRole) {
+                // 有下游角色：进入下游的运输队列（下一回合才会到达receiving）
+                downstreamRole.inTransit.push(maxCanShip);
+                console.log(`玩家 ${playerRoleObj.name} 出荷: ${maxCanShip}, 进入 ${downstreamRole.name} の運送中`);
+            } else {
+                // Retailer发货给消费者：只减库存，不创建运输队列
+                console.log(`玩家 ${playerRoleObj.name} 零売: ${maxCanShip}`);
+            }
         }
         
         playerRoleObj.shippedThisRound = maxCanShip; // 记录本周发货量
