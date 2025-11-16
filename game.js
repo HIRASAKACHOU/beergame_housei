@@ -814,8 +814,7 @@ function updateMainUI() {
         const thisRoundShipped = game.roundHistory.shipped || 0;
         const afterShipBackorder = game.roundHistory.backorder || 0;
         if (document.getElementById('demandLabel')) document.getElementById('demandLabel').textContent = '本周出货: ';
-        document.getElementById('demandDisplay').textContent = thisRoundShipped;
-        if (document.getElementById('backorderLabel')) document.getElementById('backorderLabel').textContent = '発注残: ';
+        if (document.getElementById('demandLabel')) document.getElementById('demandLabel').textContent = '本周出货: ';
         document.getElementById('backorderNeedDisplay').textContent = afterShipBackorder;
         if (document.getElementById('totalNeedLabel')) document.getElementById('totalNeedLabel').style.display = 'none';
         // 禁用输入框，显示已完成状态
