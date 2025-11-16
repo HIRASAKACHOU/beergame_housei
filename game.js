@@ -294,6 +294,10 @@ class BeerGame {
                 role.receiving = [4]; // 入荷処理中: 4個
                 role.inTransit = [4]; // 輸送中: 4個
             }
+            
+            // 初期需要を設定（第1週は全て4が需要ベース）
+            role.lastOrder = 4; // 初期注文量（全角色）
+            role.orderHistory = [4]; // 注文履歴に初期値を追加
         });
 
         this.gameStarted = true;
