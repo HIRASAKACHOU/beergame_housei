@@ -205,7 +205,7 @@ http://localhost:8000
 
 ## 🏫 関連情報
 
-**開発者**: Hosei University Business Simulation Lab  
+**開発者**: Hosei University Graduate School of Innovation Management
 **開発言語**: 日本語・中国語  
 **対象**: ビジネス教育・サプライチェーン学習  
 **バージョン**: v0.8  
