@@ -778,7 +778,10 @@ function updateMainUI() {
     document.getElementById('backorderNeedDisplay').textContent = role.backorder;
     document.getElementById('totalNeedDisplay').textContent = shippingNeed;
     
-    const maxShip = Math.min(shippingNeed, role.inventory);
+    // 发货推荐量 = min(需要总量, 库存)
+    // 需要总量 = 当期需求 + 累积缺货
+    const totalNeed = role.currentDemand + role.backorder;
+    const maxShip = Math.min(totalNeed, role.inventory);
     document.getElementById('shipInput').value = maxShip;
     document.getElementById('shipInput').max = role.inventory;
 
