@@ -241,6 +241,8 @@ class BeerGame {
         this.gameStarted = false;
         this.roundHistory = [];
         this.aiParams = {}; // AIパラメータ設定
+        this.shippingConfirmed = false;
+        this.orderingConfirmed = false;
     }
 
     // ゲーム初期化
