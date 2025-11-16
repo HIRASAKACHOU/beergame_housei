@@ -8,7 +8,7 @@ class Role {
         
         // ========== 在庫管理 ==========
         this.inventory = 12; // 現在在庫
-        this.backorder = 0; // 欠品量（累積）
+        this.backorder = 0; // 発注残（未充足の累積注文量）
         
         // ========== 各環節の独立データ ==========
         // 入荷処理中（receiving完了待ち）
@@ -82,7 +82,7 @@ class AIStrategy {
     static defaultProfiles = {
         [this.AI_TYPE.PANIC]: {
             coverWeeks: 3.0,        // 需要を何週分カバーしたいか（多め）
-            backlogWeight: 1.6,     // 欠品への過剰反応度
+            backlogWeight: 0.64,    // 発注残への反応度（10→4に低下）
             invAdjustWeight: 0.9,   // ギャップを発注に反映する強さ
             smoothing: 0.3,         // 前回注文への依存度（小さめ→振れ幅大きい）
             noiseLevel: 0.25        // ランダム揺らぎ（±25%）
@@ -776,8 +776,8 @@ function updateMainUI() {
     document.getElementById('backorderDisplay').textContent = role.backorder;
 
     // 更新发货区
-    // 出荷必要数 = 発注残（累積缺货），不需要加上当期需求（当期需求会自动加入発注残）
-    const shippingNeed = role.backorder;
+    // 出荷必要数 = 当期需求 + 発注残
+    const shippingNeed = role.currentDemand + role.backorder;
     document.getElementById('demandDisplay').textContent = role.currentDemand;
     document.getElementById('backorderNeedDisplay').textContent = role.backorder;
     document.getElementById('totalNeedDisplay').textContent = shippingNeed;

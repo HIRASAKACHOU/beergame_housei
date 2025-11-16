@@ -147,7 +147,7 @@
                             <div class="inventory-label">個</div>
                         </div>
                         <div class="info-bar">
-                            <span>欠品: <strong id="backorderDisplay">0</strong></span>
+                            <span>発注残: <strong id="backorderDisplay">0</strong></span>
                         </div>
                     </div>
 
@@ -156,7 +156,7 @@
                         <h3>🚚 出荷エリア</h3>
                         <div class="demand-info">
                             <p>今週の需要: <strong id="demandDisplay">4</strong> 個</p>
-                            <p>欠品補充: <strong id="backorderNeedDisplay">0</strong> 個</p>
+                            <p>発注残: <strong id="backorderNeedDisplay">0</strong> 個</p>
                             <p class="total-need">出荷必要数: <strong id="totalNeedDisplay">4</strong> 個</p>
                         </div>
                         <div class="shipping-controls-main">
@@ -214,7 +214,7 @@
                                     <th>入荷</th>
                                     <th>在庫</th>
                                     <th>出荷</th>
-                                    <th>欠品</th>
+                                    <th>発注残</th>
                                     <th>発注</th>
                                     <th>コスト</th>
                                 </tr>
@@ -230,11 +230,48 @@
 
         <div class="result-panel" id="resultPanel" style="display: none;">
             <h2>🎉 ゲーム終了</h2>
+            
+            <!-- スコアカード -->
             <div class="final-scores" id="finalScores"></div>
+            
+            <!-- タブナビゲーション -->
+            <div class="stats-tabs">
+                <button class="tab-btn active" onclick="switchStatsTab('scores')">🏆 スコア</button>
+                <button class="tab-btn" onclick="switchStatsTab('table')">📊 詳細データ</button>
+                <button class="tab-btn" onclick="switchStatsTab('charts')">📈 グラフ分析</button>
+            </div>
+            
+            <!-- スコアタブ -->
+            <div class="stats-tab-content" id="scoresTab" style="display: block;"></div>
+            
+            <!-- 詳細データタブ -->
+            <div class="stats-tab-content" id="tableTab" style="display: none;">
+                <div class="stats-table-container" id="statsTableContainer"></div>
+            </div>
+            
+            <!-- グラフ分析タブ -->
+            <div class="stats-tab-content" id="chartsTab" style="display: none;">
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <canvas id="inventoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="backorderChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="orderChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
             <button class="reset-btn" onclick="resetGame()">もう一度プレイ</button>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
