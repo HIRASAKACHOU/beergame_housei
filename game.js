@@ -206,23 +206,9 @@ class AIStrategy {
     static makeDecision(role, demand, avgDemand, aiParams = {}) {
         const strategyParams = aiParams[role.aiType] || {};
         
-        switch (role.aiType) {
-            case AIStrategy.AI_TYPE.PANIC:
-            case 'panic':
-                return AIStrategy.panic(role, demand, strategyParams);
-            case AIStrategy.AI_TYPE.SAFE:
-            case 'safe':
-                return AIStrategy.safe(role, demand, strategyParams);
-            case AIStrategy.AI_TYPE.CALM:
-            case 'calm':
-                return AIStrategy.calm(role, demand, strategyParams);
-            case 'aggressive':
-                return AIStrategy.aggressive(role, demand, strategyParams);
-            case 'random':
-                return AIStrategy.random(role, demand, strategyParams);
-            default:
-                return demand;
-        }
+        // 直接使用 decideOrder，不经过中间函数
+        // 这样可以使用外部传入的 avgDemand，而不是在这里重新计算
+        return AIStrategy.decideOrder(role, demand, avgDemand, strategyParams);
     }
 }
 
