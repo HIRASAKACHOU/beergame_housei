@@ -813,10 +813,9 @@ function updateMainUI() {
         // 发货后：显示本周出荷数和出荷后的發注残
         const thisRoundShipped = game.roundHistory.shipped || 0;
         const afterShipBackorder = game.roundHistory.backorder || 0;
-        if (document.getElementById('demandLabel')) document.getElementById('demandLabel').textContent = '本周出货: ';
-        if (document.getElementById('demandLabel')) document.getElementById('demandLabel').textContent = '本周出货: ';
+        document.getElementById('demandDisplay').textContent = thisRoundShipped;
         document.getElementById('backorderNeedDisplay').textContent = afterShipBackorder;
-        if (document.getElementById('totalNeedLabel')) document.getElementById('totalNeedLabel').style.display = 'none';
+        document.querySelector('.total-need').style.display = 'none';
         // 禁用输入框，显示已完成状态
         document.getElementById('shipInput').disabled = true;
         document.querySelector('.ship-btn').disabled = true;
@@ -824,14 +823,10 @@ function updateMainUI() {
     } else {
         // 发货前：显示出荷必要数
         const shippingNeed = role.currentDemand + backorderForDisplay;
-        if (document.getElementById('demandLabel')) document.getElementById('demandLabel').textContent = '今週の需要: ';
         document.getElementById('demandDisplay').textContent = role.currentDemand;
-        if (document.getElementById('backorderLabel')) document.getElementById('backorderLabel').textContent = '発注残: ';
         document.getElementById('backorderNeedDisplay').textContent = backorderForDisplay;
-        if (document.getElementById('totalNeedLabel')) {
-            document.getElementById('totalNeedLabel').style.display = 'block';
-            document.getElementById('totalNeedLabel').textContent = '出荷必要数: ' + shippingNeed + ' 個';
-        }
+        document.getElementById('totalNeedDisplay').textContent = shippingNeed;
+        document.querySelector('.total-need').style.display = 'block';
         // 启用输入框
         document.getElementById('shipInput').disabled = false;
         document.querySelector('.ship-btn').disabled = false;
