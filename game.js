@@ -16,6 +16,9 @@ class Role {
         this.isPlayer = false; // プレイヤーかどうか
         this.aiType = 'safe'; // AIタイプ
         this.lastOrder = 0; // 前回の発注量
+        
+        // 統計用データ
+        this.weeklyStats = []; // 週別統計：{ week, inventory, backorder, order, received, shipped, cost }
     }
 
     // 商品受領
@@ -347,11 +350,6 @@ class BeerGame {
     showRoundStartModal(receivedToInventory, arrivedToReceiving) {
         const playerRoleObj = this.roles[this.playerRole];
         
-        // 如果不是第一回合，先处理上一回合的订单（上游发货）
-        if (this.currentRound > 1) {
-            this.processUpstreamShipments();
-        }
-        
         // 设置需求
         this.updateDemand();
         
@@ -460,6 +458,11 @@ class BeerGame {
         // AI发货
         this.executeAIShipping();
         
+        // プレイヤーが出荷確認した後に、上流からの発送を処理
+        if (this.currentRound > 1) {
+            this.processUpstreamShipments();
+        }
+        
         return true;
     }
 
@@ -525,6 +528,21 @@ class BeerGame {
         
         // 保存历史
         this.history.push({...this.roundHistory});
+        
+        // 各役割の週別統計を保存
+        Object.keys(this.roles).forEach(roleKey => {
+            const role = this.roles[roleKey];
+            const weekStats = {
+                week: this.currentRound,
+                inventory: role.inventory,
+                backorder: role.backorder,
+                order: role.lastOrder,
+                received: this.roundHistory.received || 0,
+                shipped: this.roundHistory.shipped || 0,
+                cost: role.totalCost
+            };
+            role.weeklyStats.push(weekStats);
+        });
         
         // 检查游戏是否结束
         if (this.currentRound >= this.totalRounds) {
@@ -955,7 +973,9 @@ function showResults() {
     document.getElementById('resultPanel').style.display = 'block';
 
     const finalScores = game.getFinalScores();
-    const scoresContainer = document.getElementById('finalScores');
+    
+    // スコアカード表示
+    const scoresContainer = document.getElementById('scoresTab');
     scoresContainer.innerHTML = '';
 
     finalScores.forEach((score, index) => {
@@ -964,9 +984,258 @@ function showResults() {
         card.innerHTML = `
             <h3>${score.name} ${score.isPlayer ? '(あなた)' : ''}</h3>
             <div class="final-cost">${score.cost} ドル</div>
-            <div>${index === 0 ? '🏆 最優秀' : `第 ${index + 1} 位`}</div>
+            <div class="rank">${index === 0 ? '🏆 最優秀' : `第 ${index + 1} 位`}</div>
         `;
         scoresContainer.appendChild(card);
+    });
+    
+    // 詳細データテーブル表示
+    showStatisticsTable();
+    
+    // グラフ表示
+    showStatisticsCharts();
+    
+    // デフォルトでスコアタブを表示
+    switchStatsTab('scores');
+}
+
+// 統計テーブルを表示
+function showStatisticsTable() {
+    const container = document.getElementById('statsTableContainer');
+    container.innerHTML = '';
+    
+    // 各役割のテーブルを作成
+    Object.keys(game.roles).forEach(roleKey => {
+        const role = game.roles[roleKey];
+        
+        const roleSection = document.createElement('div');
+        roleSection.style.marginBottom = '30px';
+        
+        const roleTitle = document.createElement('h3');
+        roleTitle.textContent = `📊 ${role.name}${role.isPlayer ? ' (あなた)' : ''}`;
+        roleTitle.style.marginBottom = '15px';
+        roleTitle.style.color = '#333';
+        
+        const table = document.createElement('table');
+        table.className = 'stats-table';
+        
+        // テーブルヘッダー
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th>週</th>
+                <th>入荷</th>
+                <th>在庫</th>
+                <th>出荷</th>
+                <th>欠品</th>
+                <th>発注</th>
+                <th>累計コスト</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+        
+        // テーブルボディ
+        const tbody = document.createElement('tbody');
+        role.weeklyStats.forEach(stat => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td class="role-name">${stat.week}</td>
+                <td class="data-cell">${stat.received}</td>
+                <td class="data-cell highlight">${stat.inventory}</td>
+                <td class="data-cell">${stat.shipped}</td>
+                <td class="data-cell ${stat.backorder > 0 ? 'warning' : ''}">${stat.backorder}</td>
+                <td class="data-cell">${stat.order}</td>
+                <td class="data-cell ${stat.cost > 10 ? 'warning' : 'success'}">${stat.cost}</td>
+            `;
+        });
+        table.appendChild(tbody);
+        
+        roleSection.appendChild(roleTitle);
+        roleSection.appendChild(table);
+        container.appendChild(roleSection);
+    });
+}
+
+// 統計グラフを表示
+function showStatisticsCharts() {
+    // Chart.jsが読み込まれているか確認
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded');
+        return;
+    }
+    
+    const roleNames = Object.keys(game.roles).map(k => game.roles[k].name);
+    const roleKeys = Object.keys(game.roles);
+    
+    // チャート用のデータを準備
+    const weeks = [];
+    const roleDatasets = {};
+    
+    // 週の列を初期化
+    for (let i = 1; i <= game.totalRounds; i++) {
+        weeks.push(`W${i}`);
+    }
+    
+    // 各役割のデータを整理
+    roleKeys.forEach(roleKey => {
+        const role = game.roles[roleKey];
+        roleDatasets[roleKey] = {
+            labels: weeks,
+            inventory: role.weeklyStats.map(s => s.inventory),
+            backorder: role.weeklyStats.map(s => s.backorder),
+            order: role.weeklyStats.map(s => s.order),
+            cost: role.weeklyStats.map(s => s.cost)
+        };
+    });
+    
+    const colors = {
+        'retailer': '#3b82f6',
+        'supplier2': '#10b981',
+        'supplier1': '#f59e0b',
+        'factory': '#ef4444'
+    };
+    
+    // 1. 在庫推移グラフ
+    const inventoryCtx = document.getElementById('inventoryChart').getContext('2d');
+    new Chart(inventoryCtx, {
+        type: 'line',
+        data: {
+            labels: weeks,
+            datasets: roleKeys.map(roleKey => ({
+                label: game.roles[roleKey].name,
+                data: roleDatasets[roleKey].inventory,
+                borderColor: colors[roleKey],
+                backgroundColor: colors[roleKey] + '20',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 2
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: '📦 在庫推移' },
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '在庫数' } }
+            }
+        }
+    });
+    
+    // 2. 欠品推移グラフ
+    const backorderCtx = document.getElementById('backorderChart').getContext('2d');
+    new Chart(backorderCtx, {
+        type: 'line',
+        data: {
+            labels: weeks,
+            datasets: roleKeys.map(roleKey => ({
+                label: game.roles[roleKey].name,
+                data: roleDatasets[roleKey].backorder,
+                borderColor: colors[roleKey],
+                backgroundColor: colors[roleKey] + '20',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 2
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: '⚠️ 欠品推移' },
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '欠品数' } }
+            }
+        }
+    });
+    
+    // 3. 発注推移グラフ
+    const orderCtx = document.getElementById('orderChart').getContext('2d');
+    new Chart(orderCtx, {
+        type: 'bar',
+        data: {
+            labels: weeks,
+            datasets: roleKeys.map(roleKey => ({
+                label: game.roles[roleKey].name,
+                data: roleDatasets[roleKey].order,
+                backgroundColor: colors[roleKey],
+                borderColor: colors[roleKey],
+                borderWidth: 1
+            }))
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'x',
+            plugins: {
+                title: { display: true, text: '📝 発注推移' },
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '発注数' } }
+            }
+        }
+    });
+    
+    // 4. コスト累積グラフ
+    const costCtx = document.getElementById('costChart').getContext('2d');
+    new Chart(costCtx, {
+        type: 'line',
+        data: {
+            labels: weeks,
+            datasets: roleKeys.map(roleKey => ({
+                label: game.roles[roleKey].name,
+                data: roleDatasets[roleKey].cost,
+                borderColor: colors[roleKey],
+                backgroundColor: colors[roleKey] + '20',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 2
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: '💰 累計コスト推移' },
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'コスト（ドル）' } }
+            }
+        }
+    });
+}
+
+// タブ切り替え関数
+function switchStatsTab(tabName) {
+    // すべてのタブコンテンツを非表示
+    document.querySelectorAll('.stats-tab-content').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // すべてのタブボタンを非アクティブ
+    document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // 選択されたタブを表示
+    const tabContent = document.getElementById(tabName + 'Tab');
+    if (tabContent) {
+        tabContent.style.display = 'block';
+    }
+    
+    // 選択されたタブボタンをアクティブ
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach((btn, index) => {
+        if ((index === 0 && tabName === 'scores') ||
+            (index === 1 && tabName === 'table') ||
+            (index === 2 && tabName === 'charts')) {
+            btn.classList.add('active');
+        }
     });
 }
 
