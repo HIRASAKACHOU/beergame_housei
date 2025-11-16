@@ -1,0 +1,27 @@
+{
+  "version": "0.8",
+  "versionHistory": {
+    "0.8": {
+      "date": "2025-11-16",
+      "type": "feature",
+      "description": "AI システムのパラメータ化実装"
+    },
+    "0.7": {
+      "date": "2025-11-15",
+      "type": "feature",
+      "description": "UI改進：トースト通知とアニメーション"
+    },
+    "0.6": {
+      "date": "2025-11-10",
+      "type": "refactor",
+      "description": "術語統一：ラウンド→週"
+    }
+  },
+  "versioningRules": {
+    "majorVersion": 0,
+    "minorStart": 1,
+    "minorMax": 9,
+    "incrementType": "minor",
+    "majorDecisionRequired": true
+  }
+}
