@@ -18,9 +18,7 @@ class Role {
         this.lastOrder = 0; // 前回の発注量
     }
 
-    /            <div class="transit-round">${index === 0 ? '次週到着' : `${roundsLeft}週後`}</div>
-            <div class="transit-amount">${amount}個</div>
-            <div style="font-size: 12px; color: #999;">第${arrivalRound}週</div>品受領
+    // 商品受領
     receiveGoods(amount) {
         this.inventory += amount;
     }
@@ -51,45 +49,72 @@ class Role {
 
 // AI戦略クラス
 class AIStrategy {
+    // デフォルトのAIパラメータ
+    static defaultParams = {
+        panic: {
+            demandMultiplier: 1.5,
+            randomFactor: 0.1
+        },
+        safe: {
+            safetyStock: 8,
+            demandMultiplier: 1.0
+        },
+        calm: {
+            demandMultiplier: 0.9,
+            randomFactor: 0.05
+        }
+    };
+
     // パニック型AI：需要変化に過剰反応
-    static panic(role, demand) {
-        const randomFactor = Math.random() * 0.2 - 0.1; // -10% to +10%
-        const orderAmount = Math.max(0, Math.round(demand * 1.5 * (1 + randomFactor)));
+    static panic(role, demand, params = {}) {
+        const config = { ...AIStrategy.defaultParams.panic, ...params };
+        const randomFactor = (Math.random() * 2 - 1) * config.randomFactor; // ±randomFactor
+        const orderAmount = Math.max(0, Math.round(demand * config.demandMultiplier * (1 + randomFactor)));
         return orderAmount;
     }
 
     // 安全型AI：固定の安全在庫を維持
-    static safe(role, demand) {
-        const safetyStock = 8;
-        const targetInventory = safetyStock + demand;
+    static safe(role, demand, params = {}) {
+        const config = { ...AIStrategy.defaultParams.safe, ...params };
+        const targetInventory = config.safetyStock + demand;
         const orderAmount = Math.max(0, targetInventory - role.inventory + demand);
         return Math.round(orderAmount);
     }
 
-    // 積極型AI：低在庫を追求
-    static aggressive(role, demand) {
-        const orderAmount = Math.max(0, Math.round(demand * 0.9));
+    // 冷静型AI：低在庫を追求（積極型から改名）
+    static calm(role, demand, params = {}) {
+        const config = { ...AIStrategy.defaultParams.calm, ...params };
+        const orderAmount = Math.max(0, Math.round(demand * config.demandMultiplier));
         return orderAmount;
+    }
+
+    // 後方互換性のため aggressive も冷静型にマッピング
+    static aggressive(role, demand, params = {}) {
+        return AIStrategy.calm(role, demand, params);
     }
     
     // ランダムに戦略を選択
-    static random(role, demand) {
-        const strategies = ['panic', 'safe', 'aggressive'];
+    static random(role, demand, params = {}) {
+        const strategies = ['panic', 'safe', 'calm'];
         const randomStrategy = strategies[Math.floor(Math.random() * strategies.length)];
-        return AIStrategy[randomStrategy](role, demand);
+        return AIStrategy[randomStrategy](role, demand, params);
     }
 
     // AIタイプに応じて決定
-    static makeDecision(role, demand) {
+    static makeDecision(role, demand, aiParams = {}) {
+        const strategyParams = aiParams[role.aiType] || {};
+        
         switch (role.aiType) {
             case 'panic':
-                return AIStrategy.panic(role, demand);
+                return AIStrategy.panic(role, demand, strategyParams);
             case 'safe':
-                return AIStrategy.safe(role, demand);
+                return AIStrategy.safe(role, demand, strategyParams);
+            case 'calm':
+                return AIStrategy.calm(role, demand, strategyParams);
             case 'aggressive':
-                return AIStrategy.aggressive(role, demand);
+                return AIStrategy.aggressive(role, demand, strategyParams);
             case 'random':
-                return AIStrategy.random(role, demand);
+                return AIStrategy.random(role, demand, strategyParams);
             default:
                 return demand;
         }
@@ -120,6 +145,7 @@ class BeerGame {
         this.history = [];
         this.gameStarted = false;
         this.roundHistory = [];
+        this.aiParams = {}; // AIパラメータ設定
     }
 
     // ゲーム初期化
@@ -131,6 +157,9 @@ class BeerGame {
         this.productionTime = params.productionTime;
         this.inventoryCost = params.inventoryCost;
         this.backorderCost = params.backorderCost;
+        
+        // AIパラメータの設定（params.aiParams があれば使用）
+        this.aiParams = params.aiParams || {};
 
         // プレイヤーとAIの設定
         Object.keys(this.roles).forEach(roleKey => {
@@ -240,7 +269,7 @@ class BeerGame {
         this.showRoundStartModal(receivedToInventory, arrivedToReceiving);
     }
     
-    // 显示回合开始确认窗口
+    // 显示回合开始提示（自动消失）
     showRoundStartModal(receivedToInventory, arrivedToReceiving) {
         const playerRoleObj = this.roles[this.playerRole];
         
@@ -255,50 +284,54 @@ class BeerGame {
         // 更新UI
         updateMainUI();
         
-        // 显示弹窗
+        // 显示短暂提示
         const modal = document.getElementById('phaseModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
         const modalBtn = document.getElementById('modalConfirmBtn');
         
-        const isFactory = this.playerRole === 'factory';
-        const demand = playerRoleObj.currentDemand;
-        const totalDemand = demand + playerRoleObj.backorder;
+        modalTitle.textContent = `第${this.currentRound}週`;
         
-        // 计算当前状态
-        const currentInventory = playerRoleObj.inventory;
-        const inReceiving = playerRoleObj.receiving.length > 0 ? playerRoleObj.receiving[0] : 0;
-        const inTransit = playerRoleObj.inTransit.length > 0 ? playerRoleObj.inTransit[0] : 0;
-        
-        modalTitle.textContent = `第${this.currentRound}週開始`;
-        
-        let statusHTML = '';
-        if (receivedToInventory > 0) {
-            statusHTML += `<p style="font-size: 18px; margin: 10px 0;">📦 <strong>在庫に追加: ${receivedToInventory}個</strong></p>`;
-        }
-        if (arrivedToReceiving > 0) {
-            statusHTML += `<p style="font-size: 18px; margin: 10px 0;">🚛 <strong>入荷処理中: ${arrivedToReceiving}個</strong></p>`;
-        }
-        
-        // 如果没有任何货物移动，显示提示
-        if (receivedToInventory === 0 && arrivedToReceiving === 0) {
-            statusHTML = `<p style="font-size: 16px; color: #999; text-align: center; margin: 20px 0;">商品の移動はありません</p>`;
-        }
-        
-        modalBody.innerHTML = `
-            <div class="modal-info">
-                ${statusHTML}
+        let animationHTML = `
+            <div class="modal-info toast-notification">
+                <p style="font-size: 28px; font-weight: bold; color: #333; text-align: center; margin: 15px 0;">
+                    第${this.currentRound}週が開始しました
+                </p>
             </div>
         `;
         
-        modalBtn.textContent = '出荷フェーズへ';
-        modalBtn.onclick = () => {
+        // 添加动效信息
+        if (receivedToInventory > 0 || arrivedToReceiving > 0) {
+            animationHTML += `
+                <div class="animation-info" style="margin-top: 15px;">
+                    ${receivedToInventory > 0 ? `
+                        <div class="item-animation receiving-to-inventory">
+                            <span class="animation-icon">📦</span>
+                            <span style="font-size: 16px; color: #333;">在庫に追加: <strong>${receivedToInventory}個</strong></span>
+                        </div>
+                    ` : ''}
+                    ${arrivedToReceiving > 0 ? `
+                        <div class="item-animation incoming-to-receiving">
+                            <span class="animation-icon">🚛</span>
+                            <span style="font-size: 16px; color: #333;">入荷処理中: <strong>${arrivedToReceiving}個</strong></span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        modalBody.innerHTML = animationHTML;
+        
+        // 隐藏确认按钮
+        modalBtn.style.display = 'none';
+        modal.style.display = 'flex';
+        
+        // 2秒后自动关闭
+        setTimeout(() => {
             modal.style.display = 'none';
             this.currentPhase = 'ship';
             updateMainUI();
-        };
-        
-        modal.style.display = 'flex';
+        }, 2000);
     }
 
     // 更新需求
@@ -476,7 +509,7 @@ class BeerGame {
         Object.keys(this.roles).forEach(roleKey => {
             const role = this.roles[roleKey];
             if (!role.isPlayer) {
-                const orderAmount = AIStrategy.makeDecision(role, role.currentDemand || 4);
+                const orderAmount = AIStrategy.makeDecision(role, role.currentDemand || 4, this.aiParams);
                 role.placeOrder(orderAmount);
                 // 注意：不直接加入inTransit，等上游发货
                 // 工厂特殊处理：直接加入生产队列
@@ -575,6 +608,12 @@ function updateMainUI() {
     document.getElementById('currentRound').textContent = game.currentRound;
     document.getElementById('totalRounds').textContent = game.totalRounds;
     document.getElementById('playerRoleName').textContent = roleNames[game.playerRole];
+    
+    // 显示"ホームに戻る"按钮（游戏运行时）
+    const resetBtnHeader = document.getElementById('resetBtnHeader');
+    if (resetBtnHeader) {
+        resetBtnHeader.style.display = 'block';
+    }
 
     // 更新成本显示
     const lastRoundCost = game.history.length > 0 ? game.history[game.history.length - 1].cost : 0;
@@ -652,7 +691,7 @@ function updateTransitTimeline() {
     
     role.inTransit.forEach((amount, index) => {
         const item = document.createElement('div');
-        item.className = 'transit-item';
+        item.className = 'transit-item animation-transit-item';
         if (index === 0) {
             item.classList.add('arriving');
         }
@@ -689,7 +728,7 @@ function updateReceivingArea() {
     if (role.receiving.length > 0) {
         role.receiving.forEach((amount, index) => {
             const item = document.createElement('div');
-            item.className = 'receiving-item';
+            item.className = 'receiving-item animation-receiving-item';
             item.innerHTML = `
                 <div class="receiving-label">入荷処理中</div>
                 <div class="receiving-amount">${amount}</div>
@@ -854,6 +893,12 @@ function resetGame() {
     document.getElementById('gamePanel').style.display = 'none';
     document.getElementById('resultPanel').style.display = 'none';
     document.getElementById('phaseModal').style.display = 'none';
+    
+    // 隐藏"ホームに戻る"按钮
+    const resetBtnHeader = document.getElementById('resetBtnHeader');
+    if (resetBtnHeader) {
+        resetBtnHeader.style.display = 'none';
+    }
     
     // 清除选择
     document.querySelectorAll('.role-btn').forEach(btn => {

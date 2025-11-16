@@ -36,6 +36,7 @@ header h1 {
     display: flex;
     gap: 30px;
     font-size: 16px;
+    align-items: center;
 }
 
 .game-info span {
@@ -45,6 +46,24 @@ header h1 {
 .game-info strong {
     color: #667eea;
     font-size: 20px;
+}
+
+.reset-btn-header {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.reset-btn-header:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
 }
 
 /* Setup Panel */
@@ -1528,4 +1547,204 @@ header h1 {
 
 .loading-dot:nth-child(2) { animation-delay: 0.2s; }
 .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ==================== 新增动效样式 ==================== */
+
+/* 开局提示动画 - 自动消失 */
+@keyframes toast-pop-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes toast-fade-out {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+    }
+}
+
+.toast-notification {
+    animation: toast-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+              toast-fade-out 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.5s forwards !important;
+}
+
+/* 动效信息容器 */
+.animation-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item-animation {
+    padding: 12px 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    animation: slide-in-left 0.6s ease-out;
+}
+
+.receiving-to-inventory {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-left: 4px solid #10b981;
+}
+
+.incoming-to-receiving {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-left: 4px solid #3b82f6;
+}
+
+@keyframes slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animation-icon {
+    font-size: 24px;
+    display: inline-block;
+    animation: bounce-icon 1s ease-in-out infinite;
+}
+
+@keyframes bounce-icon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* 入荷処理项动画 - 上下浮动动效 */
+.animation-receiving-item {
+    animation: receiving-flow-animation 2.5s ease-in-out infinite !important;
+}
+
+@keyframes receiving-flow-animation {
+    0% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 1);
+    }
+    25% {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 6px 12px rgba(245, 158, 11, 0.2);
+    }
+    50% {
+        transform: translateY(-12px) scale(1.05);
+        box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    }
+    75% {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 6px 12px rgba(245, 158, 11, 0.2);
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 1);
+    }
+}
+
+/* 运输项动画 - 左右摇晃+向前运动效果 */
+.animation-transit-item {
+    animation: transit-motion-animation 2s ease-in-out infinite !important;
+}
+
+@keyframes transit-motion-animation {
+    0% {
+        transform: translateX(0) translateY(0) scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 1);
+    }
+    25% {
+        transform: translateX(4px) translateY(-3px) scale(1.02);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
+    }
+    50% {
+        transform: translateX(8px) translateY(0) scale(1.05);
+        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.25);
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    }
+    75% {
+        transform: translateX(4px) translateY(-3px) scale(1.02);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
+    }
+    100% {
+        transform: translateX(0) translateY(0) scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 1);
+    }
+}
+
+/* 到达状态加强动画 */
+.animation-transit-item.arriving {
+    animation: arriving-pulse 1.5s ease-in-out infinite !important;
+}
+
+@keyframes arriving-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+        background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+    }
+}
+
+/* 模态框中的商品流动动画 */
+.receiving-animation {
+    animation: item-to-inventory 1.5s ease-in-out;
+}
+
+.transit-animation {
+    animation: item-to-receiving 1.5s ease-in-out 0.3s both;
+}
+
+@keyframes item-to-inventory {
+    0% {
+        opacity: 0;
+        transform: translateX(-50px) translateY(-20px) scale(0.5);
+    }
+    50% {
+        transform: translateX(0) translateY(0) scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) translateY(0) scale(1);
+    }
+}
+
+@keyframes item-to-receiving {
+    0% {
+        opacity: 0;
+        transform: translateX(50px) translateY(20px) scale(0.5);
+    }
+    50% {
+        transform: translateX(0) translateY(0) scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) translateY(0) scale(1);
+    }
+}
 

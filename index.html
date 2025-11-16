@@ -13,6 +13,7 @@
             <div class="game-info">
                 <span>週: <strong id="currentRound">0</strong></span>
                 <span>総週数: <strong id="totalRounds">30</strong></span>
+                <button class="reset-btn-header" id="resetBtnHeader" onclick="resetGame()" style="display: none;">ホームに戻る</button>
             </div>
         </header>
 
@@ -45,7 +46,7 @@
                             <option value="random" selected>ランダム</option>
                             <option value="panic">パニック型</option>
                             <option value="safe">安全型</option>
-                            <option value="aggressive">積極型</option>
+                            <option value="calm">冷静型</option>
                         </select>
                     </div>
                     <div class="ai-role">
@@ -54,7 +55,7 @@
                             <option value="random" selected>ランダム</option>
                             <option value="panic">パニック型</option>
                             <option value="safe">安全型</option>
-                            <option value="aggressive">積極型</option>
+                            <option value="calm">冷静型</option>
                         </select>
                     </div>
                     <div class="ai-role">
@@ -63,7 +64,7 @@
                             <option value="random" selected>ランダム</option>
                             <option value="panic">パニック型</option>
                             <option value="safe">安全型</option>
-                            <option value="aggressive">積極型</option>
+                            <option value="calm">冷静型</option>
                         </select>
                     </div>
                     <div class="ai-role">
@@ -72,7 +73,7 @@
                             <option value="random" selected>ランダム</option>
                             <option value="panic">パニック型</option>
                             <option value="safe">安全型</option>
-                            <option value="aggressive">積極型</option>
+                            <option value="calm">冷静型</option>
                         </select>
                     </div>
                 </div>
@@ -133,7 +134,6 @@
                         <button class="control-btn next-round-btn" id="nextRoundMainBtn" onclick="nextRoundMain()" disabled>
                             次の週 ➔
                         </button>
-                        <button class="control-btn reset-btn-small" onclick="resetGame()">リセット</button>
                     </div>
                 </div>
 
