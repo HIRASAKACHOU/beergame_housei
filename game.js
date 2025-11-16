@@ -5,20 +5,39 @@ class Role {
     constructor(name, type) {
         this.name = name;
         this.type = type; // 'retailer', 'supplier2', 'supplier1', 'factory'
-        this.inventory = 12; // 初期在庫
-        this.backorder = 0; // 欠品量
-        this.inTransit = []; // 輸送中の商品キュー
-        this.receiving = []; // 入荷処理中の商品キュー
-        this.incomingOrders = []; // 受注キュー
-        this.currentDemand = 0; // 現在の需要
+        
+        // ========== 在庫管理 ==========
+        this.inventory = 12; // 現在在庫
+        this.backorder = 0; // 欠品量（累積）
+        
+        // ========== 各環節の独立データ ==========
+        // 入荷処理中（receiving完了待ち）
+        this.receiving = []; // キュー：[4] など
+        this.receivedThisRound = 0; // 今週受領した量
+        
+        // 輸送中（発送完了後→受領まで）
+        this.inTransit = []; // キュー：[4] など
+        this.shippedThisRound = 0; // 今週発送した量
+        
+        // 受注キュー（下流からの注文）
+        this.incomingOrders = []; // キュー
+        
+        // ========== 需要・発注管理 ==========
+        this.currentDemand = 0; // 現在の需要（顧客需要またはダウンストリーム注文）
+        this.lastOrder = 0; // 前回の発注量（今週分の発注）
+        this.lastShipped = 0; // 前回発送時に実際に発送した量
+        
+        // ========== コスト管理 ==========
         this.totalCost = 0; // 累計コスト
+        this.costThisRound = 0; // 今週のコスト
+        
+        // ========== 履歴管理 ==========
         this.orderHistory = []; // 発注履歴
+        this.weeklyStats = []; // 週別統計：{ week, inventory, backorder, order, received, shipped, cost }
+        
+        // ========== AI設定 ==========
         this.isPlayer = false; // プレイヤーかどうか
         this.aiType = 'safe'; // AIタイプ
-        this.lastOrder = 0; // 前回の発注量
-        
-        // 統計用データ
-        this.weeklyStats = []; // 週別統計：{ week, inventory, backorder, order, received, shipped, cost }
     }
 
     // 商品受領
@@ -108,26 +127,35 @@ class AIStrategy {
         } = profile;
 
         // 1) 需要予測（直近と平均のハイブリッド：60%直近 + 40%平均）
+        // ただし、平均需要を上限とする（指数級増加を防ぐ）
         const forecast = 0.6 * demand + 0.4 * (avgDemand ?? demand);
+        const cappedForecast = Math.max(demand, Math.min(forecast, avgDemand * 1.5)); // 平均の1.5倍を上限
 
         // 2) 目標在庫（需要 × カバー週数）
-        const targetStock = forecast * coverWeeks;
+        const targetStock = cappedForecast * coverWeeks;
 
         // 3) 在庫ギャップ（在庫が足りないほどプラスになる）
         // ギャップ = 目標在庫 + 欠品*重み - 現在在庫
-        const gap = targetStock + backlogWeight * role.backorder - role.inventory;
+        // ただし、欠品への反応も上限を設ける
+        const cappedBacklog = Math.min(role.backorder, avgDemand * 2); // 欠品の反応は平均需要の2倍まで
+        const gap = targetStock + backlogWeight * cappedBacklog - role.inventory;
 
         // 4) ベース発注量：今見えている需要 + ギャップ補正
-        let orderBase = demand + invAdjustWeight * gap;
+        // ただし、急な変動を制限（前回発注の±50%程度）
+        let orderBase = demand + invAdjustWeight * Math.max(gap, -demand); // ギャップがマイナスでも需要以上には落ちない
 
         // 5) 慣性を考慮（前回の発注量との中庸）
         let order = smoothing * role.lastOrder + (1 - smoothing) * orderBase;
 
-        // 6) ランダム揺らぎ（±noiseLevel％）
+        // 6) 急激な変動を制限（前回の50%～150%に抑える）
+        const prevOrder = role.lastOrder || demand;
+        order = Math.max(prevOrder * 0.5, Math.min(order, prevOrder * 1.5));
+
+        // 7) ランダム揺らぎ（±noiseLevel％）
         const noiseFactor = 1 + (Math.random() * 2 - 1) * noiseLevel;
         order *= noiseFactor;
 
-        // 7) マイナス禁止＆整数に
+        // 8) マイナス禁止＆整数に
         order = Math.max(0, Math.round(order));
 
         return order;
@@ -438,19 +466,24 @@ class BeerGame {
         if (this.shippingConfirmed) return false;
         
         const playerRoleObj = this.roles[this.playerRole];
-        const totalDemand = playerRoleObj.currentDemand + playerRoleObj.backorder;
         
-        // 限制发货量不超过库存
-        const actualShip = Math.min(shipAmount, playerRoleObj.inventory);
+        // 需要发送的总量 = 当期需求 + 累积缺货
+        const demand = playerRoleObj.currentDemand || 0;
+        const totalNeed = demand + playerRoleObj.backorder;
+        
+        // 实际能发的量 = min(玩家输入, 库存, 需求)
+        // 即：玩家最多发库存量，但不应超过实际需求（避免过度发货）
+        const maxCanShip = Math.min(shipAmount, playerRoleObj.inventory, totalNeed);
         
         // 发货
-        playerRoleObj.inventory -= actualShip;
+        playerRoleObj.inventory -= maxCanShip;
+        playerRoleObj.shippedThisRound = maxCanShip; // 记录本周发货量
         
         // 更新缺货
-        const newBackorder = Math.max(0, totalDemand - actualShip);
+        const newBackorder = Math.max(0, totalNeed - maxCanShip);
         playerRoleObj.backorder = newBackorder;
         
-        this.roundHistory.shipped = actualShip;
+        this.roundHistory.shipped = maxCanShip;
         this.roundHistory.inventory = playerRoleObj.inventory; // 记录发货后的库存
         this.roundHistory.backorder = newBackorder;
         this.shippingConfirmed = true;
@@ -563,15 +596,20 @@ class BeerGame {
             const role = this.roles[roleKey];
             if (role.isPlayer) return;
             
-            // 确定本回合的需求（使用currentDemand，不读取lastOrder）
+            // 需要发送的总量 = 当期需求 + 累积缺货
             let demand = role.currentDemand || 0;
+            const totalNeed = demand + role.backorder;
             
-            // 计算总需求（包括之前的缺货）
-            const totalDemand = demand + role.backorder;
-            const shipped = Math.min(totalDemand, role.inventory);
+            // 实际能发的量 = min(需要量, 库存)
+            // 即：有多少发多少（但不超过需要量）
+            const shipped = Math.min(totalNeed, role.inventory);
             
+            // 更新库存和缺货
             role.inventory -= shipped;
-            role.backorder = Math.max(0, totalDemand - shipped);
+            role.shippedThisRound = shipped; // 记录本周发货量
+            
+            // 更新缺货：如果发货不足，剩余的需求转为缺货
+            role.backorder = Math.max(0, totalNeed - shipped);
         });
     }
 
