@@ -321,12 +321,35 @@ class BeerGame {
         
         console.log(`\n========== 第 ${this.currentRound} 回合开始 ==========`);
         
-        // 步骤1: 入荷处理区的货物 → 库存（先处理上一回合到达的）
         let receivedToInventory = 0;
-        if (playerRoleObj.receiving.length > 0) {
-            receivedToInventory = playerRoleObj.receiving.shift() || 0;
-            playerRoleObj.receiveGoods(receivedToInventory);
-            console.log(`玩家 ${playerRoleObj.name} 入荷: ${receivedToInventory}, 库存变化: ${playerRoleObj.inventory - receivedToInventory} → ${playerRoleObj.inventory}`);
+        let arrivedToReceiving = 0;
+        
+        if (isFactory) {
+            // ✅ 工厂特殊处理：没有上游，没有入荷处理区
+            // 生产中的商品 → 库存（直接入库）
+            if (playerRoleObj.inTransit.length > 0) {
+                arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
+                if (arrivedToReceiving > 0) {
+                    playerRoleObj.receiveGoods(arrivedToReceiving);
+                    console.log(`玩家 ${playerRoleObj.name} 生产完成: ${arrivedToReceiving}, 库存余: ${playerRoleObj.inventory}`);
+                }
+            }
+        } else {
+            // 正常角色处理：入荷 → 库存
+            if (playerRoleObj.receiving.length > 0) {
+                receivedToInventory = playerRoleObj.receiving.shift() || 0;
+                playerRoleObj.receiveGoods(receivedToInventory);
+                console.log(`玩家 ${playerRoleObj.name} 入荷: ${receivedToInventory}, 库存变化: ${playerRoleObj.inventory - receivedToInventory} → ${playerRoleObj.inventory}`);
+            }
+            
+            // 运输 → 入荷处理区
+            if (playerRoleObj.inTransit.length > 0) {
+                arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
+                if (arrivedToReceiving > 0) {
+                    playerRoleObj.receiving.push(arrivedToReceiving);
+                    console.log(`玩家 ${playerRoleObj.name} 运输到达: ${arrivedToReceiving}, 进入入荷処理中`);
+                }
+            }
         }
         
         this.roundHistory.received = receivedToInventory;
@@ -340,16 +363,6 @@ class BeerGame {
             }
         });
         
-        // 步骤2: 运输中的货物 → 入荷处理区（本回合新到达的）
-        let arrivedToReceiving = 0;
-        if (playerRoleObj.inTransit.length > 0) {
-            arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
-            if (arrivedToReceiving > 0) {
-                playerRoleObj.receiving.push(arrivedToReceiving);
-                console.log(`玩家 ${playerRoleObj.name} 运输到达: ${arrivedToReceiving}, 进入入荷处理中`);
-            }
-        }
-        
         // AI角色：运输 → 入荷
         Object.values(this.roles).forEach(role => {
             if (!role.isPlayer && role.inTransit.length > 0) {
@@ -361,13 +374,13 @@ class BeerGame {
                         console.log(`${role.name} 生产完成: ${aiArrived}, 库存: ${role.inventory}`);
                     } else {
                         role.receiving.push(aiArrived);
-                        console.log(`${role.name} 运输到达: ${aiArrived}, 进入入荷处理中`);
+                        console.log(`${role.name} 运输到达: ${aiArrived}, 进入入荷処理中`);
                     }
                 }
             }
         });
         
-        // 显示回合开始确认窗口（合并显示所有信息）
+        // 显示回合开始确认窗口
         this.showRoundStartModal(receivedToInventory, arrivedToReceiving);
     }
     
@@ -776,15 +789,17 @@ function updateMainUI() {
     document.getElementById('backorderDisplay').textContent = role.backorder;
 
     // 更新发货区
-    // 出荷必要数 = 当期需求 + 発注残
-    const shippingNeed = role.currentDemand + role.backorder;
+    // 出荷必要数 = 当期需求 + 発注残（工場は発注残=0）
+    const isFactoryDisplay = game.playerRole === 'factory';
+    const backorderForDisplay = isFactoryDisplay ? 0 : role.backorder;
+    const shippingNeed = role.currentDemand + backorderForDisplay;
     document.getElementById('demandDisplay').textContent = role.currentDemand;
-    document.getElementById('backorderNeedDisplay').textContent = role.backorder;
+    document.getElementById('backorderNeedDisplay').textContent = backorderForDisplay;
     document.getElementById('totalNeedDisplay').textContent = shippingNeed;
     
     // 发货推荐量 = min(需要总量, 库存)
-    // 需要总量 = 当期需求 + 累积缺货
-    const totalNeed = role.currentDemand + role.backorder;
+    // 需要总量 = 当期需求 + 発注残
+    const totalNeed = role.currentDemand + backorderForDisplay;
     const maxShip = Math.min(totalNeed, role.inventory);
     document.getElementById('shipInput').value = maxShip;
     document.getElementById('shipInput').max = role.inventory;
