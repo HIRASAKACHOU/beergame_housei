@@ -493,8 +493,7 @@ class BeerGame {
         // AI发货
         this.executeAIShipping();
         
-        // 玩家发货确认后，处理上游发货（上游根据当前回合下游的订单发货）
-        this.processUpstreamShipments();
+        // 不在这里处理上游发货
         
         return true;
     }
@@ -518,7 +517,9 @@ class BeerGame {
         // AI订货
         this.executeAIOrders();
         
-        // 注意：不在这里处理上游发货，而是在发货确认时处理
+        // 玩家订货确认后，处理上游发货（上游根据当前回合下游的订单发货）
+        // 这样可以确保 retailer.lastOrder 已经被设置
+        this.processUpstreamShipments();
         
         return true;
     }
