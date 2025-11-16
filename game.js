@@ -47,45 +47,112 @@ class Role {
     }
 }
 
-// AI戦略クラス
+// AI戦略クラス - 新しい設計方針に基づいた共通ロジック
 class AIStrategy {
-    // デフォルトのAIパラメータ
-    static defaultParams = {
-        panic: {
-            demandMultiplier: 1.5,
-            randomFactor: 0.1
+    // AI性格プロファイル（共通ロジック設計方針）
+    static AI_TYPE = {
+        PANIC: 'panic',
+        SAFE: 'safe',
+        CALM: 'calm'
+    };
+
+    // デフォルトの性格プロファイル
+    static defaultProfiles = {
+        [this.AI_TYPE.PANIC]: {
+            coverWeeks: 3.0,        // 需要を何週分カバーしたいか（多め）
+            backlogWeight: 1.6,     // 欠品への過剰反応度
+            invAdjustWeight: 0.9,   // ギャップを発注に反映する強さ
+            smoothing: 0.3,         // 前回注文への依存度（小さめ→振れ幅大きい）
+            noiseLevel: 0.25        // ランダム揺らぎ（±25%）
         },
-        safe: {
-            safetyStock: 8,
-            demandMultiplier: 1.0
+        [this.AI_TYPE.SAFE]: {
+            coverWeeks: 2.0,        // そこそこ多めの安全在庫
+            backlogWeight: 1.2,     // 適度な欠品反応
+            invAdjustWeight: 0.7,   // 中程度のギャップ反応
+            smoothing: 0.6,         // 慣性強め→急な変更なし
+            noiseLevel: 0.15        // 比較的安定
         },
-        calm: {
-            demandMultiplier: 0.9,
-            randomFactor: 0.05
+        [this.AI_TYPE.CALM]: {
+            coverWeeks: 1.2,        // 最低限の在庫
+            backlogWeight: 0.7,     // 欠品への弱い反応
+            invAdjustWeight: 0.5,   // 弱いギャップ反応
+            smoothing: 0.8,         // 前回注文をかなり重視
+            noiseLevel: 0.07        // あまりブレない
         }
     };
 
+    /**
+     * 共通ロジックに基づいて発注量を決定
+     * @param {Role} role - 役割オブジェクト
+     * @param {number} demand - 現在見えている需要
+     * @param {number} avgDemand - 過去の平均需要
+     * @param {object} profileOverride - プロファイルのオーバーライド（オプション）
+     * @returns {number} 発注量
+     */
+    static decideOrder(role, demand, avgDemand, profileOverride = {}) {
+        // プロファイルを取得（オーバーライドをマージ）
+        const profile = {
+            ...AIStrategy.defaultProfiles[role.aiType] || AIStrategy.defaultProfiles[AIStrategy.AI_TYPE.SAFE],
+            ...profileOverride
+        };
+
+        const {
+            coverWeeks,
+            backlogWeight,
+            invAdjustWeight,
+            smoothing,
+            noiseLevel
+        } = profile;
+
+        // 1) 需要予測（直近と平均のハイブリッド：60%直近 + 40%平均）
+        const forecast = 0.6 * demand + 0.4 * (avgDemand ?? demand);
+
+        // 2) 目標在庫（需要 × カバー週数）
+        const targetStock = forecast * coverWeeks;
+
+        // 3) 在庫ギャップ（在庫が足りないほどプラスになる）
+        // ギャップ = 目標在庫 + 欠品*重み - 現在在庫
+        const gap = targetStock + backlogWeight * role.backorder - role.inventory;
+
+        // 4) ベース発注量：今見えている需要 + ギャップ補正
+        let orderBase = demand + invAdjustWeight * gap;
+
+        // 5) 慣性を考慮（前回の発注量との中庸）
+        let order = smoothing * role.lastOrder + (1 - smoothing) * orderBase;
+
+        // 6) ランダム揺らぎ（±noiseLevel％）
+        const noiseFactor = 1 + (Math.random() * 2 - 1) * noiseLevel;
+        order *= noiseFactor;
+
+        // 7) マイナス禁止＆整数に
+        order = Math.max(0, Math.round(order));
+
+        return order;
+    }
+
+    // 後方互換性のため古いメソッドも提供
     // パニック型AI：需要変化に過剰反応
     static panic(role, demand, params = {}) {
-        const config = { ...AIStrategy.defaultParams.panic, ...params };
-        const randomFactor = (Math.random() * 2 - 1) * config.randomFactor; // ±randomFactor
-        const orderAmount = Math.max(0, Math.round(demand * config.demandMultiplier * (1 + randomFactor)));
-        return orderAmount;
+        const avgDemand = role.orderHistory.length > 0 
+            ? role.orderHistory.reduce((a, b) => a + b, 0) / role.orderHistory.length 
+            : demand;
+        return AIStrategy.decideOrder(role, demand, avgDemand, params);
     }
 
     // 安全型AI：固定の安全在庫を維持
     static safe(role, demand, params = {}) {
-        const config = { ...AIStrategy.defaultParams.safe, ...params };
-        const targetInventory = config.safetyStock + demand;
-        const orderAmount = Math.max(0, targetInventory - role.inventory + demand);
-        return Math.round(orderAmount);
+        const avgDemand = role.orderHistory.length > 0 
+            ? role.orderHistory.reduce((a, b) => a + b, 0) / role.orderHistory.length 
+            : demand;
+        return AIStrategy.decideOrder(role, demand, avgDemand, params);
     }
 
-    // 冷静型AI：低在庫を追求（積極型から改名）
+    // 冷静型AI：低在庫を追求
     static calm(role, demand, params = {}) {
-        const config = { ...AIStrategy.defaultParams.calm, ...params };
-        const orderAmount = Math.max(0, Math.round(demand * config.demandMultiplier));
-        return orderAmount;
+        const avgDemand = role.orderHistory.length > 0 
+            ? role.orderHistory.reduce((a, b) => a + b, 0) / role.orderHistory.length 
+            : demand;
+        return AIStrategy.decideOrder(role, demand, avgDemand, params);
     }
 
     // 後方互換性のため aggressive も冷静型にマッピング
@@ -95,20 +162,27 @@ class AIStrategy {
     
     // ランダムに戦略を選択
     static random(role, demand, params = {}) {
-        const strategies = ['panic', 'safe', 'calm'];
+        const strategies = [AIStrategy.AI_TYPE.PANIC, AIStrategy.AI_TYPE.SAFE, AIStrategy.AI_TYPE.CALM];
         const randomStrategy = strategies[Math.floor(Math.random() * strategies.length)];
-        return AIStrategy[randomStrategy](role, demand, params);
+        const tempAiType = role.aiType;
+        role.aiType = randomStrategy;
+        const result = AIStrategy.decideOrder(role, demand, undefined, params);
+        role.aiType = tempAiType;
+        return result;
     }
 
     // AIタイプに応じて決定
-    static makeDecision(role, demand, aiParams = {}) {
+    static makeDecision(role, demand, avgDemand, aiParams = {}) {
         const strategyParams = aiParams[role.aiType] || {};
         
         switch (role.aiType) {
+            case AIStrategy.AI_TYPE.PANIC:
             case 'panic':
                 return AIStrategy.panic(role, demand, strategyParams);
+            case AIStrategy.AI_TYPE.SAFE:
             case 'safe':
                 return AIStrategy.safe(role, demand, strategyParams);
+            case AIStrategy.AI_TYPE.CALM:
             case 'calm':
                 return AIStrategy.calm(role, demand, strategyParams);
             case 'aggressive':
@@ -509,7 +583,17 @@ class BeerGame {
         Object.keys(this.roles).forEach(roleKey => {
             const role = this.roles[roleKey];
             if (!role.isPlayer) {
-                const orderAmount = AIStrategy.makeDecision(role, role.currentDemand || 4, this.aiParams);
+                // 平均需要を計算（過去の発注履歴から）
+                const avgDemand = role.orderHistory.length > 0
+                    ? role.orderHistory.reduce((a, b) => a + b, 0) / role.orderHistory.length
+                    : (role.currentDemand || 4);
+                
+                const orderAmount = AIStrategy.makeDecision(
+                    role,
+                    role.currentDemand || 4,
+                    avgDemand,
+                    this.aiParams
+                );
                 role.placeOrder(orderAmount);
                 // 注意：不直接加入inTransit，等上游发货
                 // 工厂特殊处理：直接加入生产队列
