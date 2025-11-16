@@ -528,7 +528,7 @@ class BeerGame {
         
         roleOrder.forEach((roleKey, index) => {
             if (index === 0) return; // 工厂没有上游，跳过
-            if (roleKey === 'retailer') return; // Retailer 是最下游，不处理
+            // ✅ 不再跳过 retailer！retailer 也需要接收来自 supplier2 的发货
             
             const role = this.roles[roleKey];
             const upstreamKey = roleOrder[index - 1];
