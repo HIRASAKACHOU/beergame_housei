@@ -4,6 +4,27 @@
     box-sizing: border-box;
 }
 
+/* 改善触摸体验 */
+button, 
+input[type="button"],
+input[type="submit"],
+select {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* 防止双击缩放 */
+button {
+    touch-action: manipulation;
+}
+
+/* 确保输入框在手机上不会自动缩放 */
+input,
+select,
+textarea {
+    font-size: 16px;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 
                  'Microsoft YaHei', '微软雅黑', 'PingFang SC', '苹方-简', 
@@ -15,11 +36,23 @@ body {
     overflow-x: hidden;
 }
 
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+}
+
 .container {
     max-width: 1400px;
     margin: 0 auto;
     position: relative;
     overflow-x: hidden;
+}
+
+@media (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+    }
 }
 
 /* ==================== 新首页样式 ==================== */
@@ -266,34 +299,271 @@ body {
 /* 响应式设计 */
 @media (max-width: 768px) {
     .home-content, .mode-content {
-        padding: 40px 30px;
+        padding: 30px 20px;
     }
     
     .home-title {
-        font-size: 2.5em;
+        font-size: 2.2em;
+    }
+    
+    .home-subtitle {
+        font-size: 1em;
     }
     
     .mode-cards {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
     
     .menu-btn {
+        font-size: 1em;
+        padding: 18px 25px;
+    }
+    
+    .mode-content h2 {
+        font-size: 2em;
+    }
+    
+    /* 设置面板手机适配 */
+    .setup-panel {
+        padding: 30px 20px;
+        margin: 10px;
+    }
+    
+    .setup-content h2 {
+        font-size: 2em;
+        margin-bottom: 30px;
+    }
+    
+    .setup-section {
+        padding: 20px 15px;
+        margin-bottom: 25px;
+    }
+    
+    .setup-section h3 {
         font-size: 1.1em;
-        padding: 20px 30px;
+    }
+    
+    /* 角色选择按钮 */
+    .role-select {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .role-btn {
+        padding: 15px 10px;
+        font-size: 0.9em;
+    }
+    
+    /* 周数选择按钮 */
+    .round-select {
+        gap: 8px;
+    }
+    
+    .round-btn {
+        padding: 10px 18px;
+        font-size: 0.95em;
+        min-width: 65px;
+    }
+    
+    /* AI设置 */
+    .ai-settings {
+        gap: 15px;
+    }
+    
+    .ai-role {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .ai-role label {
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+    
+    .ai-role select {
+        width: 100%;
+        font-size: 0.95em;
+    }
+    
+    /* 参数设置 */
+    .param-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .param-item {
+        padding: 12px;
+    }
+    
+    /* 按钮 */
+    .setup-buttons {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .back-btn, .start-btn {
+        width: 100%;
+        padding: 15px;
+        font-size: 1em;
+    }
+    
+    /* 游戏头部 */
+    header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .header-left h1,
+    header h1 {
+        font-size: 1.3em;
+    }
+    
+    .game-info {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        font-size: 14px;
+    }
+    
+    /* 游戏主区域 */
+    .game-header-info {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .game-header-info h2 {
+        font-size: 1.3em;
+    }
+    
+    .main-game-area {
+        padding: 15px;
+    }
+    
+    /* 游戏区域 */
+    .game-sections {
+        grid-template-columns: 1fr;
+    }
+    
+    .game-section {
+        padding: 15px;
+    }
+    
+    .game-section h3 {
+        font-size: 1.1em;
     }
 }
 
 @media (max-width: 480px) {
     .home-content, .mode-content {
-        padding: 30px 20px;
+        padding: 25px 15px;
     }
     
     .home-title {
-        font-size: 2em;
+        font-size: 1.8em;
+    }
+    
+    .home-subtitle {
+        font-size: 0.9em;
     }
     
     .language-buttons {
         flex-direction: column;
+        gap: 10px;
+    }
+    
+    .lang-btn {
+        width: 100%;
+        padding: 12px 20px;
+    }
+    
+    .menu-btn {
+        padding: 15px 20px;
+        font-size: 0.95em;
+    }
+    
+    .setup-panel {
+        padding: 20px 15px;
+        margin: 5px;
+    }
+    
+    .setup-content h2 {
+        font-size: 1.6em;
+    }
+    
+    .role-select {
+        grid-template-columns: 1fr;
+    }
+    
+    .role-btn {
+        padding: 15px;
+        font-size: 1em;
+    }
+    
+    .round-btn {
+        padding: 10px 15px;
+        font-size: 0.9em;
+        min-width: 60px;
+    }
+    
+    .game-header-info h2 {
+        font-size: 1.1em;
+    }
+    
+    .game-section {
+        padding: 12px;
+    }
+    
+    /* 游戏面板额外优化 */
+    .roles-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .order-input-group-modal {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .order-input-group-modal input {
+        width: 100%;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+        padding: 20px 15px;
+    }
+    
+    .modal-btn {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+    
+    /* 历史记录表格 */
+    .history-table {
+        font-size: 0.8em;
+    }
+    
+    .history-table th,
+    .history-table td {
+        padding: 8px 4px;
+    }
+    
+    /* 输入控件 */
+    .input-group input {
+        font-size: 16px; /* 防止iOS自动缩放 */
+    }
+    
+    /* 控制按钮 */
+    .control-btn {
+        padding: 12px 20px;
+        font-size: 0.95em;
+    }
+    
+    .action-btn {
+        padding: 12px;
+        font-size: 0.95em;
     }
 }
 
