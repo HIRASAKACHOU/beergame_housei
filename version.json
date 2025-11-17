@@ -1,6 +1,11 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "versionHistory": {
+    "1.0.1": {
+      "date": "2025-11-17",
+      "type": "patch",
+      "description": "モバイル端末対応の改善 - レスポンシブデザイン強化、タッチ操作最適化"
+    },
     "1.0.0": {
       "date": "2025-11-17",
       "type": "major",
