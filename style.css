@@ -444,14 +444,79 @@ body {
     /* 游戏区域 */
     .game-sections {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .game-section {
         padding: 15px;
+        min-width: 0; /* 防止内容溢出 */
     }
     
     .game-section h3 {
         font-size: 1.1em;
+    }
+    
+    /* 物流区域 */
+    .logistics-area {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    /* 输送可视化 */
+    .transit-timeline {
+        gap: 10px;
+    }
+    
+    .transit-item {
+        min-width: 80px;
+        padding: 12px 8px;
+    }
+    
+    /* 游戏面板额外优化 */
+    .game-panel {
+        padding: 10px 5px;
+    }
+    
+    .operation-section {
+        padding: 15px 10px;
+    }
+    
+    .operation-section h3 {
+        font-size: 16px;
+    }
+    
+    /* 输入和控制优化 */
+    .shipping-controls-main,
+    .order-controls-main {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .input-group {
+        width: 100%;
+    }
+    
+    .input-group input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* 库存显示 */
+    .inventory-count {
+        font-size: 48px;
+    }
+    
+    .inventory-display {
+        min-height: 100px;
+    }
+    
+    /* 需求信息 */
+    .demand-info {
+        padding: 12px;
+    }
+    
+    .demand-info p {
+        font-size: 14px;
     }
 }
 
@@ -512,6 +577,94 @@ body {
     }
     
     .game-section {
+        padding: 12px 8px;
+    }
+    
+    /* 游戏面板 */
+    .game-panel {
+        padding: 8px 3px;
+    }
+    
+    .operation-section {
+        padding: 12px 8px;
+    }
+    
+    .operation-section h3 {
+        font-size: 15px;
+    }
+    
+    /* 库存显示优化 */
+    .inventory-display {
+        min-height: 100px;
+        padding: 10px;
+    }
+    
+    .inventory-count {
+        font-size: 40px;
+    }
+    
+    .inventory-label {
+        font-size: 13px;
+    }
+    
+    /* 需求信息 */
+    .demand-info {
+        padding: 10px;
+    }
+    
+    .demand-info p {
+        font-size: 13px;
+        margin: 6px 0;
+    }
+    
+    .demand-info strong {
+        font-size: 16px;
+    }
+    
+    /* 输入控件 */
+    .shipping-controls-main,
+    .order-controls-main {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .input-group {
+        width: 100%;
+    }
+    
+    .input-group input {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+    
+    /* 按钮 */
+    .action-btn {
+        width: 100%;
+        padding: 12px;
+        font-size: 15px;
+    }
+    
+    /* 物流可视化 */
+    .transit-item {
+        min-width: 65px;
+        padding: 8px 4px;
+        font-size: 0.8em;
+    }
+    
+    .receiving-item {
+        padding: 10px 8px;
+    }
+    }
+    
+    .input-group {
+        width: 100%;
+    }
+    
+    .input-group input {
+        width: 100%;
+        font-size: 16px;
         padding: 12px;
     }
     
@@ -913,11 +1066,17 @@ header h1 {
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .main-game-area {
     max-width: 1200px;
     margin: 0 auto;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 .game-header-info {
@@ -990,6 +1149,9 @@ header h1 {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s, box-shadow 0.3s;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .operation-section:hover {
