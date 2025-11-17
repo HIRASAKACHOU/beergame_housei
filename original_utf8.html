@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>銉撱兗銉偛銉笺儬 - 銈枫兂銈般儷銉椼儸銈ゃ儰銉笺儮銉笺儔</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>馃嵑 銉撱兗銉偛銉笺儬 - 銈枫兂銈般儷銉椼儸銈ゃ儰銉笺儮銉笺儔</h1>
+            <div class="game-info">
+                <span>閫? <strong id="currentRound">0</strong></span>
+                <span>绶忛€辨暟: <strong id="totalRounds">30</strong></span>
+                <button class="reset-btn-header" id="resetBtnHeader" onclick="resetGame()" style="display: none;">銉涖兗銉犮伀鎴汇倠</button>
+            </div>
+        </header>
+
+        <div class="setup-panel" id="setupPanel">
+            <h2>銈层兗銉犺ō瀹?/h2>
+            <div class="setup-section">
+                <h3>绶忛€辨暟</h3>
+                <div class="round-select">
+                    <button class="round-btn" data-rounds="20">20閫?/button>
+                    <button class="round-btn selected" data-rounds="30">30閫?/button>
+                    <button class="round-btn" data-rounds="40">40閫?/button>
+                </div>
+            </div>
+            <div class="setup-section">
+                <h3>褰瑰壊銈掗伕鎶炪仐銇︺亸銇犮仌銇?/h3>
+                <div class="role-select">
+                    <button class="role-btn" data-role="retailer">灏忓２妤€?/button>
+                    <button class="role-btn" data-role="supplier2">浜屾鍗稿２妤€?/button>
+                    <button class="role-btn" data-role="supplier1">涓€娆″嵏澹叉キ鑰?/button>
+                    <button class="role-btn" data-role="factory">宸ュ牬</button>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <h3>AI褰瑰壊瑷畾</h3>
+                <div class="ai-settings">
+                    <div class="ai-role">
+                        <label>灏忓２妤€?AI:</label>
+                        <select id="retailerAI">
+                            <option value="random" selected>銉┿兂銉€銉?/option>
+                            <option value="panic">銉戙儖銉冦偗鍨?/option>
+                            <option value="safe">瀹夊叏鍨?/option>
+                            <option value="calm">鍐烽潤鍨?/option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>浜屾鍗稿２妤€?AI:</label>
+                        <select id="supplier2AI">
+                            <option value="random" selected>銉┿兂銉€銉?/option>
+                            <option value="panic">銉戙儖銉冦偗鍨?/option>
+                            <option value="safe">瀹夊叏鍨?/option>
+                            <option value="calm">鍐烽潤鍨?/option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>涓€娆″嵏澹叉キ鑰?AI:</label>
+                        <select id="supplier1AI">
+                            <option value="random" selected>銉┿兂銉€銉?/option>
+                            <option value="panic">銉戙儖銉冦偗鍨?/option>
+                            <option value="safe">瀹夊叏鍨?/option>
+                            <option value="calm">鍐烽潤鍨?/option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>宸ュ牬 AI:</label>
+                        <select id="factoryAI">
+                            <option value="random" selected>銉┿兂銉€銉?/option>
+                            <option value="panic">銉戙儖銉冦偗鍨?/option>
+                            <option value="safe">瀹夊叏鍨?/option>
+                            <option value="calm">鍐烽潤鍨?/option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <h3>銈层兗銉犮儜銉┿儭銉笺偪</h3>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label>杓搁€侀亝寤?</label>
+                        <input type="number" id="transportDelay" value="1" min="0" max="5">
+                    </div>
+                    <div class="param-item">
+                        <label>鍏ヨ嵎鏅傞枔:</label>
+                        <input type="number" id="receivingTime" value="1" min="0" max="3">
+                    </div>
+                    <div class="param-item">
+                        <label>鐢熺敚鏅傞枔:</label>
+                        <input type="number" id="productionTime" value="1" min="1" max="3">
+                    </div>
+                    <div class="param-item">
+                        <label>鍦ㄥ韩銈炽偣銉?</label>
+                        <input type="number" id="inventoryCost" value="1" min="0.5" max="5" step="0.5">
+                    </div>
+                    <div class="param-item">
+                        <label>娆犲搧銈炽偣銉?</label>
+                        <input type="number" id="backorderCost" value="2" min="1" max="10" step="0.5">
+                    </div>
+                </div>
+            </div>
+
+            <button class="start-btn" id="startBtn">銈层兗銉犻枊濮?/button>
+        </div>
+
+        <!-- 銈层兗銉犮儠銈с兗銈恒儮銉笺儉銉?-->
+        <div class="modal" id="phaseModal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="modalTitle">閫遍枊濮?/h2>
+                <div id="modalBody"></div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" id="modalConfirmBtn">纰鸿獚</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-panel" id="gamePanel" style="display: none;">
+            <!-- 銉椼儸銈ゃ儰銉兼搷浣溿偍銉偄 -->
+            <div class="main-game-area">
+                <div class="game-header-info">
+                    <div class="header-left">
+                        <h2 id="playerRoleName">馃彧 灏忓２妤€?/h2>
+                        <div class="cost-display">
+                            <span class="total-cost">绱▓銈炽偣銉? <strong id="totalCost">0</strong> 銉夈儷</span>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <button class="control-btn next-round-btn" id="nextRoundMainBtn" onclick="nextRoundMain()" disabled>
+                            娆°伄閫?鉃?                        </button>
+                    </div>
+                </div>
+
+                <!-- 銉撱偢銉ャ偄銉搷浣溿偍銉偄 -->
+                <div class="visual-operation-area">
+                    <!-- 鍦ㄥ韩銈ㄣ儶銈?-->
+                    <div class="operation-section inventory-section">
+                        <h3>馃摝 鍦ㄥ韩銈ㄣ儶銈?/h3>
+                        <div class="inventory-display" id="inventoryDisplay">
+                            <div class="inventory-count">12</div>
+                            <div class="inventory-label">鍊?/div>
+                        </div>
+                        <div class="info-bar">
+                            <span>鐧烘敞娈? <strong id="backorderDisplay">0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- 鍑鸿嵎銈ㄣ儶銈?-->
+                    <div class="operation-section shipping-section">
+                        <h3>馃殮 鍑鸿嵎銈ㄣ儶銈?/h3>
+                        <div class="demand-info">
+                            <p>浠婇€便伄闇€瑕? <strong id="demandDisplay">4</strong> 鍊?/p>
+                            <p>鐧烘敞娈? <strong id="backorderNeedDisplay">0</strong> 鍊?/p>
+                            <p class="total-need">鍑鸿嵎蹇呰鏁? <strong id="totalNeedDisplay">4</strong> 鍊?/p>
+                        </div>
+                        <div class="shipping-controls-main">
+                            <label>鍑鸿嵎鏁伴噺:</label>
+                            <input type="number" id="shipInput" min="0" value="0">
+                            <button class="max-btn" onclick="setMaxShipping()">鏈€澶?/button>
+                        </div>
+                        <button class="action-btn ship-btn" onclick="confirmShipping()">鉁?鍑鸿嵎纰鸿獚</button>
+                    </div>
+
+                    <!-- 鐧烘敞銈ㄣ儶銈?-->
+                    <div class="operation-section order-section">
+                        <h3 id="orderSectionTitle">馃摑 鐧烘敞銈ㄣ儶銈?/h3>
+                        <div class="order-info">
+                            <p class="delay-info">馃搮 閬呭欢: <strong id="delayDisplay">2</strong> 閫卞緦銇埌鐫€</p>
+                            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                                馃挕 鍦ㄥ韩銇ㄩ渶瑕併伀鍩恒仴銇勩仸鐧烘敞閲忋倰姹哄畾銇椼仸銇忋仩銇曘亜
+                            </p>
+                        </div>
+                        <div class="order-controls-main">
+                            <label id="orderInputLabel">鐧烘敞鏁伴噺:</label>
+                            <input type="number" id="orderInput" min="0" value="4">
+                        </div>
+                        <button class="action-btn order-btn" onclick="confirmOrder()">鉁?鐧烘敞纰鸿獚</button>
+                    </div>
+                </div>
+
+                <!-- 鍏ヨ嵎鍑︾悊鍖恒仺杓搁€佸彲瑕栧寲 -->
+                <div class="logistics-area">
+                    <!-- 鍏ヨ嵎鍑︾悊鍖?-->
+                    <div class="receiving-visualization">
+                        <h3>馃摜 鍏ヨ嵎鍑︾悊鍖?/h3>
+                        <div class="receiving-timeline" id="receivingTimeline">
+                            <!-- 鍕曠殑鐢熸垚 -->
+                        </div>
+                    </div>
+
+                    <!-- 杓搁€佸彲瑕栧寲 -->
+                    <div class="transit-visualization">
+                        <h3 id="transitTitle">馃殯 杓搁€佷腑銇晢鍝?/h3>
+                        <div class="transit-timeline" id="transitTimeline">
+                            <!-- 鍕曠殑鐢熸垚 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 灞ユ -->
+                <div class="history-section">
+                    <h3>馃搳 閫卞垾灞ユ</h3>
+                    <div class="history-table-container">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>閫?/th>
+                                    <th>鍏ヨ嵎</th>
+                                    <th>鍦ㄥ韩</th>
+                                    <th>鍑鸿嵎</th>
+                                    <th>鐧烘敞娈?/th>
+                                    <th>鐧烘敞</th>
+                                    <th>銈炽偣銉?/th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- 鍕曠殑鐢熸垚 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-panel" id="resultPanel" style="display: none;">
+            <h2>馃帀 銈层兗銉犵祩浜?/h2>
+            
+            <!-- 銈广偝銈偒銉笺儔 -->
+            <div class="final-scores" id="finalScores"></div>
+            
+            <!-- 銈裤儢銉娿儞銈层兗銈枫儳銉?-->
+            <div class="stats-tabs">
+                <button class="tab-btn active" onclick="switchStatsTab('scores')">馃弳 銈广偝銈?/button>
+                <button class="tab-btn" onclick="switchStatsTab('table')">馃搳 瑭崇窗銉囥兗銈?/button>
+                <button class="tab-btn" onclick="switchStatsTab('charts')">馃搱 銈般儵銉曞垎鏋?/button>
+            </div>
+            
+            <!-- 銈广偝銈偪銉?-->
+            <div class="stats-tab-content" id="scoresTab" style="display: block;"></div>
+            
+            <!-- 瑭崇窗銉囥兗銈裤偪銉?-->
+            <div class="stats-tab-content" id="tableTab" style="display: none;">
+                <div class="stats-table-container" id="statsTableContainer"></div>
+            </div>
+            
+            <!-- 銈般儵銉曞垎鏋愩偪銉?-->
+            <div class="stats-tab-content" id="chartsTab" style="display: none;">
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <canvas id="inventoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="backorderChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="orderChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="reset-btn" onclick="resetGame()">銈傘亞涓€搴︺儣銉偆</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// ==================== コアクラス定義 ====================
+﻿// ==================== コアクラス定義 ====================
 
 // 役割クラス
 class Role {
@@ -81,11 +81,11 @@ class AIStrategy {
     // デフォルトの性格プロファイル
     static defaultProfiles = {
         [this.AI_TYPE.PANIC]: {
-            coverWeeks: 3.0,        // 需要を何週分カバーしたいか（多め）
-            backlogWeight: 0.64,    // 発注残への反応度（10→4に低下）
-            invAdjustWeight: 0.9,   // ギャップを発注に反映する強さ
-            smoothing: 0.3,         // 前回注文への依存度（小さめ→振れ幅大きい）
-            noiseLevel: 0.25        // ランダム揺らぎ（±25%）
+            coverWeeks: 1.8,        // 需要を何週分カバーしたいか（やや多め）
+            backlogWeight: 0.55,    // 発注残への反応度
+            invAdjustWeight: 0.75,  // ギャップを発注に反映する強さ
+            smoothing: 0.5,         // 前回注文への依存度（やや低め→適度な振れ幅）
+            noiseLevel: 0.10        // ランダム揺らぎ（±10%）
         },
         [this.AI_TYPE.SAFE]: {
             coverWeeks: 2.0,        // そこそこ多めの安全在庫
@@ -126,12 +126,12 @@ class AIStrategy {
             noiseLevel
         } = profile;
 
-        // 防护：确保 demand 和 avgDemand 是有效的数字
+        // 防御：demand と avgDemand が有効な数値であることを確認
         demand = isNaN(demand) || demand === null ? 4 : demand;
         avgDemand = isNaN(avgDemand) || avgDemand === null ? 4 : avgDemand;
 
         // 1) 需要予測（直近と平均のハイブリッド：60%直近 + 40%平均）
-        // ただし、平均需要を上限とする（指数級増加を防ぐ）
+        // ただし、平均需要を上限とする（指数級数的増加を防ぐ）
         const forecast = 0.6 * demand + 0.4 * (avgDemand ?? demand);
         const cappedForecast = Math.max(demand, Math.min(forecast, avgDemand * 1.5)); // 平均の1.5倍を上限
 
@@ -210,8 +210,8 @@ class AIStrategy {
     static makeDecision(role, demand, avgDemand, aiParams = {}) {
         const strategyParams = aiParams[role.aiType] || {};
         
-        // 直接使用 decideOrder，不经过中间函数
-        // 这样可以使用外部传入的 avgDemand，而不是在这里重新计算
+        // decideOrderを直接使用、中間関数を経由しない
+        // これにより外部から渡されたavgDemandを使用でき、ここで再計算する必要がない
         return AIStrategy.decideOrder(role, demand, avgDemand, strategyParams);
     }
 }
@@ -276,9 +276,9 @@ class BeerGame {
             const role = this.roles[roleKey];
             
             if (roleKey === 'factory') {
-                // 工場: 初期在庫4、生産時間に応じた生産中の商品
+                // 工場: 初期在庫4、生産中の商品なし（第1回合に入荷なし）
                 role.inventory = 4;
-                role.inTransit = Array(this.productionTime).fill(4);
+                role.inTransit = []; // 工場は最初生産中の商品がない
                 role.receiving = []; // 工場は入荷処理なし
             } else {
                 // その他の役割: 初期在庫12、入荷処理中4、輸送中4
@@ -312,7 +312,7 @@ class BeerGame {
         this.shippingConfirmed = false;
         this.orderingConfirmed = false;
         
-        // ✅ 重置按钮状态（为新回合做准备）
+        // ✅ ボタン状態をリセット（新しいラウンドの準備）
         const shipInputEl = document.getElementById('shipInput');
         if (shipInputEl) {
             shipInputEl.disabled = false;
@@ -335,83 +335,83 @@ class BeerGame {
         const playerRoleObj = this.roles[this.playerRole];
         const isFactory = this.playerRole === 'factory';
         
-        console.log(`\n========== 第 ${this.currentRound} 回合开始 ==========`);
+        console.log(`\n========== 第 ${this.currentRound} ラウンド開始 ==========`);
         
         let receivedToInventory = 0;
         let arrivedToReceiving = 0;
         
         if (isFactory) {
-            // ✅ 工厂特殊处理：没有上游，直接入库
-            // 生产中的商品 → 库存（直接入库）
+            // ✅ 工場特殊処理：上流がなく、直接入庫
+            // 生産中の商品 → 在庫（直接入庫）
             if (playerRoleObj.inTransit.length > 0) {
                 receivedToInventory = playerRoleObj.inTransit.shift() || 0;
                 if (receivedToInventory > 0) {
                     playerRoleObj.receiveGoods(receivedToInventory);
-                    console.log(`玩家 ${playerRoleObj.name} 生产完成: ${receivedToInventory}, 库存余: ${playerRoleObj.inventory}`);
+                    console.log(`プレイヤー ${playerRoleObj.name} 生産完了: ${receivedToInventory}, 在庫残: ${playerRoleObj.inventory}`);
                 }
             }
         } else {
-            // 正常角色处理：receiving → 库存
+            // 通常役割処理：receiving → 在庫
             if (playerRoleObj.receiving.length > 0) {
                 receivedToInventory = playerRoleObj.receiving.shift() || 0;
                 playerRoleObj.receiveGoods(receivedToInventory);
-                console.log(`玩家 ${playerRoleObj.name} 入荷: ${receivedToInventory}, 库存变化: ${playerRoleObj.inventory - receivedToInventory} → ${playerRoleObj.inventory}`);
+                console.log(`プレイヤー ${playerRoleObj.name} 入荷: ${receivedToInventory}, 在庫変化: ${playerRoleObj.inventory - receivedToInventory} → ${playerRoleObj.inventory}`);
             }
             
-            // 运输 → 入荷处理区
+            // 輸送 → 入荷処理エリア
             if (playerRoleObj.inTransit.length > 0) {
                 arrivedToReceiving = playerRoleObj.inTransit.shift() || 0;
                 if (arrivedToReceiving > 0) {
                     playerRoleObj.receiving.push(arrivedToReceiving);
-                    console.log(`玩家 ${playerRoleObj.name} 运输到达: ${arrivedToReceiving}, 进入入荷処理中`);
+                    console.log(`プレイヤー ${playerRoleObj.name} 輸送到着: ${arrivedToReceiving}, 入荷処理中へ`);
                 }
             }
         }
         
-        // ✅ 正确记录入荷数量（Factory也正确记录）
+        // ✅ 入荷数量を正しく記録（Factoryも正しく記録）
         this.roundHistory.received = receivedToInventory;
         
-        // AI角色：入荷 → 库存
+        // AI役割：入荷 → 在庫
         Object.values(this.roles).forEach(role => {
             if (!role.isPlayer && role.receiving.length > 0) {
                 const toInventory = role.receiving.shift() || 0;
                 role.receiveGoods(toInventory);
-                console.log(`AI ${role.name} 入荷: ${toInventory}, 库存: ${role.inventory}`);
+                console.log(`AI ${role.name} 入荷: ${toInventory}, 在庫: ${role.inventory}`);
             }
         });
         
-        // AI角色：运输 → 入荷
+        // AI役割：輸送 → 入荷
         Object.values(this.roles).forEach(role => {
             if (!role.isPlayer && role.inTransit.length > 0) {
                 const aiArrived = role.inTransit.shift() || 0;
                 if (aiArrived > 0) {
                     if (role.type === 'factory') {
-                        // 工厂直接入库（生产完成）
+                        // 工場直接入庫（生産完了）
                         role.receiveGoods(aiArrived);
-                        console.log(`${role.name} 生产完成: ${aiArrived}, 库存: ${role.inventory}`);
+                        console.log(`${role.name} 生産完了: ${aiArrived}, 在庫: ${role.inventory}`);
                     } else {
                         role.receiving.push(aiArrived);
-                        console.log(`${role.name} 运输到达: ${aiArrived}, 进入入荷処理中`);
+                        console.log(`${role.name} 輸送到着: ${aiArrived}, 入荷処理中へ`);
                     }
                 }
             }
         });
         
-        // 显示回合开始确认窗口
+        // ラウンド開始確認ウィンドウを表示
         this.showRoundStartModal(receivedToInventory, arrivedToReceiving);
     }
     
-    // 显示回合开始提示（自动消失）
+    // ラウンド開始通知を表示（自動消滅）
     showRoundStartModal(receivedToInventory, arrivedToReceiving) {
         const playerRoleObj = this.roles[this.playerRole];
         
-        // 设置需求
+        // 需要を設定
         this.updateDemand();
         
-        // 更新UI
+        // UIを更新
         updateMainUI();
         
-        // 显示短暂提示
+        // 短い通知を表示
         const modal = document.getElementById('phaseModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
@@ -427,7 +427,7 @@ class BeerGame {
             </div>
         `;
         
-        // 添加动效信息
+        // アニメーション情報を追加
         if (receivedToInventory > 0 || arrivedToReceiving > 0) {
             animationHTML += `
                 <div class="animation-info" style="margin-top: 15px;">
@@ -449,11 +449,11 @@ class BeerGame {
         
         modalBody.innerHTML = animationHTML;
         
-        // 隐藏确认按钮
+        // 確認ボタンを非表示
         modalBtn.style.display = 'none';
         modal.style.display = 'flex';
         
-        // 2秒后自动关闭
+        // 2秒後に自動的に閉じる
         setTimeout(() => {
             modal.style.display = 'none';
             this.currentPhase = 'ship';
@@ -461,21 +461,21 @@ class BeerGame {
         }, 2000);
     }
 
-    // 更新需求
+    // 需要を更新
     updateDemand() {
         const playerRoleObj = this.roles[this.playerRole];
         
-        // 确定需求
+        // 需要を確定
         if (this.playerRole === 'retailer') {
             playerRoleObj.currentDemand = this.customerDemand[this.currentRound - 1] || 0;
         } else {
-            // 从下游获取订单
-            // 第一回合时，下游还没有订单，所以需求为0
+            // 下流から注文を取得
+            // 第1ラウンドでは、下流にまだ注文がないため、需要は0
             const downstreamRole = this.getDownstreamRole(this.playerRole);
             playerRoleObj.currentDemand = (this.currentRound > 1 && downstreamRole) ? downstreamRole.lastOrder : 0;
         }
         
-        // AI也更新需求
+        // AIも需要を更新
         Object.keys(this.roles).forEach(roleKey => {
             const role = this.roles[roleKey];
             if (role.isPlayer) return;
@@ -483,71 +483,71 @@ class BeerGame {
             if (roleKey === 'retailer') {
                 role.currentDemand = this.customerDemand[this.currentRound - 1] || 0;
             } else {
-                // 第一回合时，下游还没有订单，所以需求为0
+                // 第1ラウンドでは、下流にまだ注文がないため、需要は0
                 const downstreamRole = this.getDownstreamRole(roleKey);
                 role.currentDemand = (this.currentRound > 1 && downstreamRole) ? downstreamRole.lastOrder : 0;
             }
         });
     }
 
-    // 确认发货
+    // 出荷を確認
     confirmShipping(shipAmount) {
         if (this.shippingConfirmed) return false;
         
         const playerRoleObj = this.roles[this.playerRole];
         
-        // 需要发送的总量 = 当期需求 + 累积缺货
+        // 発送すべき総量 = 当期需要 + 累積欠品
         const demand = playerRoleObj.currentDemand || 0;
         const totalNeed = demand + playerRoleObj.backorder;
         
-        // 实际能发的量 = min(玩家输入, 库存, 需求)
-        // 即：玩家最多发库存量，但不应超过实际需求（避免过度发货）
+        // 実際に発送できる量 = min(プレイヤー入力, 在庫, 需要)
+        // つまり：プレイヤーは最大で在庫量を発送できるが、実際の需要を超えてはいけない（過剰出荷を避ける）
         const maxCanShip = Math.min(shipAmount, playerRoleObj.inventory, totalNeed);
         
-        // ✅ 改变逻辑：发货 = 创建下游的运输队列，而非直接减库存
-        // 玩家角色发货时，将货物加入到下游角色的 inTransit
+        // ✅ ロジック変更：出荷 = 下流の輸送キューを作成、直接在庫を減らすのではない
+        // プレイヤー役割が出荷する時、商品を下流役割のinTransitに追加
         const downstreamRole = this.getDownstreamRole(this.playerRole);
         
         if (maxCanShip > 0) {
-            // 从库存减少（所有角色都要减库存）
+            // 在庫から減少（すべての役割が在庫を減らす）
             playerRoleObj.inventory -= maxCanShip;
             
             if (downstreamRole) {
-                // 有下游角色：进入下游的运输队列（下一回合才会到达receiving）
+                // 下流役割あり：下流の輸送キューへ（次のラウンドでreceivingに到達）
                 downstreamRole.inTransit.push(maxCanShip);
-                console.log(`玩家 ${playerRoleObj.name} 出荷: ${maxCanShip}, 进入 ${downstreamRole.name} の運送中`);
+                console.log(`プレイヤー ${playerRoleObj.name} 出荷: ${maxCanShip}, ${downstreamRole.name} の輸送中へ`);
             } else {
-                // Retailer发货给消费者：只减库存，不创建运输队列
-                console.log(`玩家 ${playerRoleObj.name} 零売: ${maxCanShip}`);
+                // Retailerが消費者へ出荷：在庫を減らすのみ、輸送キューを作成しない
+                console.log(`プレイヤー ${playerRoleObj.name} 小売: ${maxCanShip}`);
             }
         }
         
-        playerRoleObj.shippedThisRound = maxCanShip; // 记录本周发货量
+        playerRoleObj.shippedThisRound = maxCanShip; // 今週の出荷量を記録
         
-        // 更新缺货
+        // 欠品を更新
         const newBackorder = Math.max(0, totalNeed - maxCanShip);
         playerRoleObj.backorder = newBackorder;
         
         this.roundHistory.shipped = maxCanShip;
-        this.roundHistory.inventory = playerRoleObj.inventory; // 记录发货后的库存
+        this.roundHistory.inventory = playerRoleObj.inventory; // 出荷後の在庫を記録
         this.roundHistory.backorder = newBackorder;
         this.shippingConfirmed = true;
         
-        // AI发货
+        // AI出荷
         this.executeAIShipping();
         
         return true;
     }
 
-    // 确认订货
+    // 発注を確認
     confirmOrdering(orderAmount) {
         if (this.orderingConfirmed) return false;
         
         const playerRoleObj = this.roles[this.playerRole];
         playerRoleObj.placeOrder(orderAmount);
         
-        // 注意：订单不会立即处理，而是等到下一回合开始时上游才发货
-        // 工厂特殊处理：直接加入生产队列
+        // 注意：注文はすぐに処理されず、次のラウンド開始時に上流が出荷する
+        // 工場特殊処理：生産キューへ直接追加
         if (this.playerRole === 'factory') {
             playerRoleObj.inTransit.push(orderAmount);
         }
@@ -555,25 +555,25 @@ class BeerGame {
         this.roundHistory.ordered = orderAmount;
         this.orderingConfirmed = true;
         
-        // AI订货
+        // AI発注
         this.executeAIOrders();
         
-        // ✅ 不在确认订货时处理上游发货！
-        // 上游的发货应该通过「出荷」动作来执行
+        // ✅ 発注確認時に上流の出荷を処理しない！
+        // 上流の出荷は「出荷」アクションで実行すべき
         
         return true;
     }
     
-    // ✅ processUpstreamShipments 已删除 - 发货逻辑已移至 confirmShipping/executeAIShipping
+    // ✅ processUpstreamShipments 削除済み - 出荷ロジックはconfirmShipping/executeAIShippingに移動
     
-    // 完成回合
+    // ラウンドを完了
     finishRound() {
         const playerRoleObj = this.roles[this.playerRole];
         
-        // 在回合结束时计算成本
+        // ラウンド終了時にコストを計算
         this.calculateCosts();
         
-        // 保存历史
+        // 履歴を保存
         this.history.push({...this.roundHistory});
         
         // 各役割の週別統計を保存
@@ -591,57 +591,57 @@ class BeerGame {
             role.weeklyStats.push(weekStats);
         });
         
-        // 检查游戏是否结束
+        // ゲームが終了したかチェック
         if (this.currentRound >= this.totalRounds) {
-            return true; // 游戏结束
+            return true; // ゲーム終了
         }
         
-        // 进入下一回合
+        // 次のラウンドへ
         this.currentRound++;
-        return false; // 继续游戏
+        return false; // ゲームを続行
     }
 
-    // AI发货逻辑
+    // AI出荷逻辑
     executeAIShipping() {
         const roleOrder = ['factory', 'supplier1', 'supplier2', 'retailer'];
         
         roleOrder.forEach((roleKey, index) => {
             const role = this.roles[roleKey];
-            if (role.isPlayer) return; // ✅ 玩家角色不在此处理（已在confirmShipping中处理）
+            if (role.isPlayer) return; // ✅ プレイヤー役割はここで処理しない（confirmShippingで処理済み）
             
-            // 需要发送的总量 = 当期需求 + 累积缺货
+            // 発送すべき総量 = 当期需要 + 累積欠品
             let demand = role.currentDemand || 0;
             const totalNeed = demand + role.backorder;
             
-            // 实际能发的量 = min(需要量, 库存)
-            // 即：有多少发多少（但不超过需要量）
+            // 実際に発送できる量 = min(必要量, 在庫)
+            // つまり：ある分だけ発送（ただし必要量を超えない）
             const shipped = Math.min(totalNeed, role.inventory);
             
-            // ✅ 改变逻辑：AI发货也是创建下游的运输队列
+            // ✅ ロジック変更：AI出荷も下流の輸送キューを作成
             if (shipped > 0 && roleKey !== 'retailer') {
-                // 从库存减少
+                // 在庫から減少
                 role.inventory -= shipped;
-                // 进入下游角色的运输队列
+                // 下流役割の輸送キューへ
                 const downstreamRole = this.getDownstreamRole(roleKey);
                 if (downstreamRole) {
                     downstreamRole.inTransit.push(shipped);
-                    console.log(`AI ${role.name} 出荷: ${shipped}, 进入 ${downstreamRole.name} の運送中`);
+                    console.log(`AI ${role.name} 出荷: ${shipped}, ${downstreamRole.name} の輸送中へ`);
                 }
             } else if (roleKey === 'retailer') {
-                // Retailer只是发货给消费者，不创建运输队列
+                // Retailerは消費者へ出荷するだけ、輸送キューを作成しない
                 role.inventory -= shipped;
-                console.log(`AI ${role.name} 零売: ${shipped}`);
+                console.log(`AI ${role.name} 小売: ${shipped}`);
             }
             
-            role.shippedThisRound = shipped; // 记录本周发货量
+            role.shippedThisRound = shipped; // 今週の出荷量を記録
             
-            // 更新缺货：如果发货不足，剩余的需求转为缺货
-            // ✅ 这里只更新AI角色的backorder，不会影响玩家
+            // 欠品を更新：出荷が不足した場合、残りの需要が欠品に
+            // ✅ ここではAI役割のbackorderのみ更新、プレイヤーには影響なし
             role.backorder = Math.max(0, totalNeed - shipped);
         });
     }
 
-    // 计算成本
+    // コストを計算
     calculateCosts() {
         Object.values(this.roles).forEach(role => {
             const cost = role.calculateCost(this.inventoryCost, this.backorderCost);
@@ -651,7 +651,7 @@ class BeerGame {
         });
     }
 
-    // 获取下游角色
+    // 下流役割を取得
     getDownstreamRole(roleKey) {
         const chain = {
             'factory': 'supplier1',
@@ -663,18 +663,18 @@ class BeerGame {
         return downstreamKey ? this.roles[downstreamKey] : null;
     }
 
-    // AI自动下单
+    // AI自動発注
     executeAIOrders() {
         Object.keys(this.roles).forEach(roleKey => {
             const role = this.roles[roleKey];
             if (!role.isPlayer) {
-                // 计算平均需要：根据发货历史
-                let avgDemand = 4; // 默认值
+                // 平均需要を計算：出荷履歴に基づく
+                let avgDemand = 4; // デフォルト値
                 if (role.orderHistory.length > 0) {
                     avgDemand = role.orderHistory.reduce((a, b) => a + b, 0) / role.orderHistory.length;
                 }
                 
-                // 计算需要量：如果当前需要为0且不是零售商，则使用默认值4
+                // 必要量を計算：現在の需要が0で小売業者でない場合、デフォルト値4を使用
                 let demand = role.currentDemand;
                 if (demand === 0 && roleKey !== 'retailer') {
                     demand = 4;
@@ -687,8 +687,8 @@ class BeerGame {
                     this.aiParams
                 );
                 role.placeOrder(orderAmount);
-                // 注意：不直接加入inTransit，等上游发货
-                // 工厂特殊处理：直接加入生产队列
+                // 注意：inTransitに直接追加せず、上流の出荷を待つ
+                // 工場特殊処理：生産キューへ直接追加
                 if (roleKey === 'factory') {
                     role.inTransit.push(orderAmount);
                 }
@@ -696,27 +696,28 @@ class BeerGame {
         });
     }
 
-    // 检查游戏是否结束
+    // ゲームが終了したかチェック
     isGameOver() {
         return this.currentRound > this.totalRounds;
     }
 
-    // 获取最终得分
+    // 最終スコアを取得
     getFinalScores() {
         return Object.entries(this.roles).map(([key, role]) => ({
             name: role.name,
             cost: role.totalCost,
+            backorder: role.backorder,
             isPlayer: role.isPlayer
         })).sort((a, b) => a.cost - b.cost);
     }
 }
 
-// ==================== 全局变量 ====================
+// ==================== グローバル変数 ====================
 let game = null;
 
-// ==================== UI控制函数 ====================
+// ==================== UI制御関数 ====================
 
-// 开始游戏
+// ゲーム開始
 function startGame() {
     const playerRoleBtns = document.querySelectorAll('.role-btn');
     let selectedRole = null;
@@ -732,7 +733,7 @@ function startGame() {
         return;
     }
 
-    // 获取选择的回合数
+    // 選択されたラウンド数を取得
     const roundBtns = document.querySelectorAll('.round-btn');
     let totalRounds = 30;
     roundBtns.forEach(btn => {
@@ -741,7 +742,7 @@ function startGame() {
         }
     });
 
-    // 收集AI设置
+    // AI設定を収集
     const aiSettings = {
         retailer: document.getElementById('retailerAI').value,
         supplier2: document.getElementById('supplier2AI').value,
@@ -749,7 +750,7 @@ function startGame() {
         factory: document.getElementById('factoryAI').value
     };
 
-    // 収集游戏参数
+    // ゲームパラメータを収集
     const params = {
         totalRounds: totalRounds,
         transportDelay: parseInt(document.getElementById('transportDelay').value),
@@ -759,16 +760,17 @@ function startGame() {
         backorderCost: parseFloat(document.getElementById('backorderCost').value)
     };
 
-    // 初始化游戏
+    // ゲームを初期化
     game = new BeerGame();
     game.initialize(selectedRole, aiSettings, params);
 
-    // 切换界面
+    // 画面を切り替え
     document.getElementById('setupPanel').style.display = 'none';
+    document.getElementById('gameHeader').style.display = 'block';
     document.getElementById('gamePanel').style.display = 'block';
 }
 
-// 更新主UI
+// メインUIを更新
 function updateMainUI() {
     if (!game) return;
 
@@ -780,21 +782,21 @@ function updateMainUI() {
         'factory': '🏭 工場'
     };
 
-    // 更新回合信息
+    // ラウンド情報を更新
     document.getElementById('currentRound').textContent = game.currentRound;
     document.getElementById('totalRounds').textContent = game.totalRounds;
     document.getElementById('playerRoleName').textContent = roleNames[game.playerRole];
     
-    // 显示"ホームに戻る"按钮（游戏运行时）
+    // 「ホームに戻る」ボタンを表示（ゲーム実行中）
     const resetBtnHeader = document.getElementById('resetBtnHeader');
     if (resetBtnHeader) {
         resetBtnHeader.style.display = 'block';
     }
 
-    // 更新累计成本显示
+    // 累計コスト表示を更新
     document.getElementById('totalCost').textContent = role.totalCost;
 
-    // 更新库存区
+    // 在庫エリアを更新
     const inventoryDisplay = document.getElementById('inventoryDisplay');
     inventoryDisplay.querySelector('.inventory-count').textContent = role.inventory;
     if (role.inventory < 5) {
@@ -804,37 +806,36 @@ function updateMainUI() {
     }
     document.getElementById('backorderDisplay').textContent = role.backorder;
 
-    // 更新发货区
-    // ✅ 如果已经确认了发货，显示本周出荷数和出荷后的發注残，否则显示出荷必要数
-    const isFactoryDisplay = game.playerRole === 'factory';
-    const backorderForDisplay = isFactoryDisplay ? 0 : role.backorder;
+    // 出荷エリアを更新
+    // ✅ 出荷確認済みなら今週の出荷数と出荷後の発注残を表示、未確認なら出荷必要数を表示
+    const backorderForDisplay = role.backorder;
     
     if (game.shippingConfirmed) {
-        // 发货后：显示本周出荷数和出荷后的發注残
+        // 出荷後：今週の出荷数と出荷後の発注残を表示
         const thisRoundShipped = game.roundHistory.shipped || 0;
         const afterShipBackorder = game.roundHistory.backorder || 0;
         document.getElementById('demandDisplay').textContent = thisRoundShipped;
         document.getElementById('backorderNeedDisplay').textContent = afterShipBackorder;
         document.querySelector('.total-need').style.display = 'none';
-        // 禁用输入框，显示已完成状态
+        // 入力欄を無効化、完了状態を表示
         document.getElementById('shipInput').disabled = true;
         document.querySelector('.ship-btn').disabled = true;
         document.querySelector('.max-btn').disabled = true;
     } else {
-        // 发货前：显示出荷必要数
+        // 出荷前：出荷必要数を表示
         const shippingNeed = role.currentDemand + backorderForDisplay;
         document.getElementById('demandDisplay').textContent = role.currentDemand;
         document.getElementById('backorderNeedDisplay').textContent = backorderForDisplay;
         document.getElementById('totalNeedDisplay').textContent = shippingNeed;
         document.querySelector('.total-need').style.display = 'block';
-        // 启用输入框
+        // 入力欄を有効化
         document.getElementById('shipInput').disabled = false;
         document.querySelector('.ship-btn').disabled = false;
         document.querySelector('.max-btn').disabled = false;
     }
     
-    // 发货推荐量 = min(需要总量, 库存)
-    // 需要总量 = 当期需求 + 発注残
+    // 出荷推奨量 = min(必要総量, 在庫)
+    // 必要総量 = 当期需要 + 発注残
     if (!game.shippingConfirmed) {
         const totalNeed = role.currentDemand + backorderForDisplay;
         const maxShip = Math.min(totalNeed, role.inventory);
@@ -842,43 +843,39 @@ function updateMainUI() {
         document.getElementById('shipInput').max = role.inventory;
     }
 
-    // 更新订货区
+    // 発注エリアを更新
     const isFactory = game.playerRole === 'factory';
     document.getElementById('orderSectionTitle').textContent = isFactory ? '🏭 生産エリア' : '📝 発注エリア';
     document.getElementById('orderInputLabel').textContent = isFactory ? '生産数量:' : '発注数量:';
     document.querySelector('.order-btn').textContent = isFactory ? '✓ 生産確認' : '✓ 発注確認';
     
-    // 更新"輸送中の商品"标题 - 工厂显示"生産中の商品"
+    // 「輸送中の商品」タイトルを更新 - 工場は「生産中の商品」を表示
     const transitTitle = document.getElementById('transitTitle');
     if (transitTitle) {
         transitTitle.textContent = isFactory ? '🏭 生産中の商品' : '🚛 輸送中の商品';
     }
     
-    // 工厂显示生产时间，其他角色显示运输+入荷時間
+    // 工場は生産時間、その他の役割は輸送+入荷時間を表示
     const delayTime = isFactory 
         ? game.productionTime 
         : game.transportDelay + game.receivingTime;
     document.getElementById('delayDisplay').textContent = delayTime;
     
-    // 订货数量只在新回合开始时清空，确认订货后保留显示
+    // 発注数量は新ラウンド開始時のみクリア、発注確認後は表示を保持
     if (!game.orderingConfirmed) {
         document.getElementById('orderInput').value = '';
     }
 
-    // 更新入荷処理区
+    // 入荷処理エリアを更新
     updateReceivingArea();
-
-    // 更新运输可视化
-    updateTransitTimeline();
-
-    // 更新历史表格
-    updateHistoryTable();
     
-    // 更新按钮状态
+    // 輸送可視化を更新
+    updateTransitTimeline();    // 履歴テーブルを更新
+    updateHistoryTable();    // ボタン状態を更新
     updateButtonStates();
 }
 
-// 更新运输时间线
+// 輸送タイムラインを更新
 function updateTransitTimeline() {
     if (!game) return;
     
@@ -903,7 +900,7 @@ function updateTransitTimeline() {
         const roundsLeft = index + 1;
         const arrivalRound = game.currentRound + roundsLeft;
         
-        // ✅ Factory 显示"生産中"和🏭 icon，其他显示"運送中"和🚛 icon
+        // ✅ Factoryは「生産中」と🏭アイコン、その他は「運送中」と🚛アイコンを表示
         const isProductionIcon = isFactory;
         const icon = isProductionIcon ? '🏭' : '🚛';
         const label = isProductionIcon ? '生産中' : '運送中';
@@ -921,7 +918,7 @@ function updateTransitTimeline() {
     });
 }
 
-// 更新入荷処理区
+// 入荷処理エリアを更新
 function updateReceivingArea() {
     if (!game) return;
     
@@ -929,7 +926,7 @@ function updateReceivingArea() {
     const isFactory = game.playerRole === 'factory';
     const receivingArea = document.getElementById('receivingTimeline');
     
-    // ✅ 工厂显示"直接入库"而不是"入荷处理なし"
+    // ✅ 工場は「直接入庫」を表示、「入荷処理なし」ではない
     if (isFactory) {
         receivingArea.innerHTML = '<p style="color: #999; text-align: center; font-size: 14px;">直接入庫（上游なし）</p>';
         return;
@@ -937,7 +934,7 @@ function updateReceivingArea() {
     
     receivingArea.innerHTML = '';
     
-    // 显示入荷处理中的商品（receiving数组）
+    // 入荷処理中の商品を表示（receiving配列）
     if (role.receiving.length > 0) {
         role.receiving.forEach((amount, index) => {
             const item = document.createElement('div');
@@ -955,7 +952,7 @@ function updateReceivingArea() {
     }
 }
 
-// 更新历史表格
+// 履歴テーブルを更新
 function updateHistoryTable() {
     if (!game) return;
     
@@ -967,7 +964,7 @@ function updateHistoryTable() {
         return;
     }
     
-    // 显示所有历史，最新的在下面
+    // 全履歴を表示、最新が下に
     game.history.forEach(record => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -982,12 +979,12 @@ function updateHistoryTable() {
         tbody.appendChild(row);
     });
     
-    // 自动滚动到最新记录
+    // 最新記録へ自動スクロール
     const container = tbody.parentElement.parentElement;
     container.scrollTop = container.scrollHeight;
 }
 
-// 更新按钮状态
+// ボタン状態を更新
 function updateButtonStates() {
     if (!game) return;
     
@@ -1006,7 +1003,7 @@ function updateButtonStates() {
     }
 }
 
-// 设置最大发货量
+// 最大出荷量を設定
 function setMaxShipping() {
     if (!game) return;
     const role = game.roles[game.playerRole];
@@ -1015,7 +1012,7 @@ function setMaxShipping() {
     document.getElementById('shipInput').value = maxShip;
 }
 
-// 确认发货
+// 出荷を確認
 function confirmShipping() {
     if (!game) return;
     
@@ -1037,14 +1034,14 @@ function confirmShipping() {
     }
 }
 
-// 确认订货
+// 発注を確認
 function confirmOrder() {
     if (!game) return;
     
     const orderInput = document.getElementById('orderInput');
     const orderAmount = parseInt(orderInput.value);
     
-    // 检查是否为空（特别是工厂必须填写）
+    // 空欄チェック（特に工場は入力必須）
     if (orderInput.value === '' || isNaN(orderAmount)) {
         const isFactory = game.playerRole === 'factory';
         const roleText = isFactory ? '生産数量' : '発注数量';
@@ -1078,7 +1075,7 @@ function nextRoundMain() {
     game.startRound();
 }
 
-// 显示结果
+// 結果を表示
 function showResults() {
     document.getElementById('gamePanel').style.display = 'none';
     document.getElementById('resultPanel').style.display = 'block';
@@ -1088,17 +1085,30 @@ function showResults() {
     // スコアカード表示
     const scoresContainer = document.getElementById('scoresTab');
     scoresContainer.innerHTML = '';
+    
+    // サプライチェーン総コストを計算
+    let totalSupplyChainCost = 0;
 
-    finalScores.forEach((score, index) => {
+    finalScores.forEach((score) => {
+        totalSupplyChainCost += score.cost;
         const card = document.createElement('div');
-        card.className = index === 0 ? 'score-card winner' : 'score-card';
+        card.className = 'score-card';
         card.innerHTML = `
             <h3>${score.name} ${score.isPlayer ? '(あなた)' : ''}</h3>
-            <div class="final-cost">${score.cost} ドル</div>
-            <div class="rank">${index === 0 ? '🏆 最優秀' : `第 ${index + 1} 位`}</div>
+            <div class="final-cost">総コスト: ${score.cost} ドル</div>
+            <div class="backorder-display">受注残: ${score.backorder} 個</div>
         `;
         scoresContainer.appendChild(card);
     });
+    
+    // 添加供应链总成本卡片
+    const totalCard = document.createElement('div');
+    totalCard.className = 'score-card winner';
+    totalCard.innerHTML = `
+        <h3>🏭 サプライチェーン総コスト</h3>
+        <div class="final-cost">${totalSupplyChainCost} ドル</div>
+    `;
+    scoresContainer.appendChild(totalCard);
     
     // 詳細データテーブル表示
     showStatisticsTable();
@@ -1350,23 +1360,296 @@ function switchStatsTab(tabName) {
     });
 }
 
-// 重置游戏
+// ゲームをリセット
+// 语言选择
+let currentLanguage = 'ja';
+let currentGameMode = 'classic'; // 当前游戏模式
+
+// 语言包
+const translations = {
+    ja: {
+        title: 'ビールゲーム',
+        subtitle: 'サプライチェーンマネジメント学習ゲーム',
+        langSelect: '言語選択',
+        singlePlayer: 'シングルプレイヤー',
+        multiPlayer: 'マルチプレイヤー',
+        comingSoon: '（近日公開）',
+        modeSelect: 'ゲームモード選択',
+        classicMode: 'クラシックモード',
+        classicDesc: '伝統的なビールゲーム体験',
+        classicFeature1: '標準的なルール',
+        classicFeature2: '4つの役割',
+        classicFeature3: 'サプライチェーン管理学習',
+        cardMode: 'カードモード',
+        cardDesc: 'カードを使った新しい体験',
+        cardFeature1: '特殊カード効果',
+        cardFeature2: '戦略的要素追加',
+        cardFeature3: 'より高い挑戦性',
+        customMode: 'カスタムモード',
+        customDesc: '自由にゲームをカスタマイズ',
+        customFeature1: 'パラメータ調整',
+        customFeature2: '特殊ルール設定',
+        customFeature3: '高度なカスタマイズ',
+        back: '戻る',
+        gameSetup: '⚙️ ゲーム設定',
+        totalWeeks: '📅 総週数',
+        weeks20: '20週',
+        weeks30: '30週',
+        weeks40: '40週',
+        weeks50: '50週',
+        weeks60: '60週',
+        selectRole: '👤 役割を選択してください',
+        roleRetailer: '🏪 小売業者',
+        roleSupplier2: '📦 二次卸売業者',
+        roleSupplier1: '🚚 一次卸売業者',
+        roleFactory: '🏭 工場',
+        aiSettings: '🤖 AI役割設定',
+        retailerAI: '小売業者 AI:',
+        supplier2AI: '二次卸売業者 AI:',
+        supplier1AI: '一次卸売業者 AI:',
+        factoryAI: '工場 AI:',
+        aiRandom: 'ランダム',
+        aiPanic: 'パニック型',
+        aiSafe: '安全型',
+        aiCalm: '冷静型',
+        gameParams: '🎮 ゲームパラメータ',
+        transportDelay: '🚛 輸送遅延:',
+        receivingTime: '📥 入荷時間:',
+        productionTime: '🏭 生産時間:',
+        inventoryCost: '💰 在庫コスト:',
+        backorderCost: '⚠️ 欠品コスト:',
+        weeks: '週',
+        dollarsPerUnit: 'ドル/個',
+        eventCards: '🎴 イベントカード',
+        enableEventCards: 'イベントカードを有効にする',
+        eventCardsDevMsg: '🚧 この機能は開発中です（近日公開予定）',
+        startGame: '🎮 ゲーム開始'
+    },
+    zh: {
+        title: '啤酒游戏',
+        subtitle: '供应链管理学习游戏',
+        langSelect: '语言选择',
+        singlePlayer: '单人模式',
+        multiPlayer: '多人模式',
+        comingSoon: '（即将推出）',
+        modeSelect: '游戏模式选择',
+        classicMode: '经典模式',
+        classicDesc: '传统的啤酒游戏体验',
+        classicFeature1: '标准规则',
+        classicFeature2: '4个角色',
+        classicFeature3: '供应链管理学习',
+        cardMode: '卡牌模式',
+        cardDesc: '使用卡牌的全新体验',
+        cardFeature1: '特殊卡牌效果',
+        cardFeature2: '增加策略要素',
+        cardFeature3: '更高挑战性',
+        customMode: '自定义模式',
+        customDesc: '自由自定义游戏',
+        customFeature1: '调整参数',
+        customFeature2: '设置特殊规则',
+        customFeature3: '高级自定义',
+        back: '返回',
+        gameSetup: '⚙️ 游戏设置',
+        totalWeeks: '📅 总周数',
+        weeks20: '20周',
+        weeks30: '30周',
+        weeks40: '40周',
+        weeks50: '50周',
+        weeks60: '60周',
+        selectRole: '👤 请选择角色',
+        roleRetailer: '🏪 零售商',
+        roleSupplier2: '📦 二级批发商',
+        roleSupplier1: '🚚 一级批发商',
+        roleFactory: '🏭 工厂',
+        aiSettings: '🤖 AI角色设置',
+        retailerAI: '零售商 AI:',
+        supplier2AI: '二级批发商 AI:',
+        supplier1AI: '一级批发商 AI:',
+        factoryAI: '工厂 AI:',
+        aiRandom: '随机',
+        aiPanic: '恐慌型',
+        aiSafe: '安全型',
+        aiCalm: '冷静型',
+        gameParams: '🎮 游戏参数',
+        transportDelay: '🚛 运输延迟:',
+        receivingTime: '📥 收货时间:',
+        productionTime: '🏭 生产时间:',
+        inventoryCost: '💰 库存成本:',
+        backorderCost: '⚠️ 缺货成本:',
+        weeks: '周',
+        dollarsPerUnit: '美元/个',
+        eventCards: '🎴 事件卡牌',
+        enableEventCards: '启用事件卡牌',
+        eventCardsDevMsg: '🚧 此功能正在开发中（即将推出）',
+        startGame: '🎮 开始游戏'
+    }
+};
+
+function selectLanguage(lang) {
+    currentLanguage = lang;
+    // 更新按钮激活状态
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        const btnLang = btn.onclick.toString().includes("'ja'") ? 'ja' : 'zh';
+        btn.classList.toggle('active', btnLang === lang);
+    });
+    updateLanguage();
+}
+
+function updateLanguage() {
+    const t = translations[currentLanguage];
+    // 更新所有带data-lang属性的元素
+    document.querySelectorAll('[data-lang]').forEach(el => {
+        const key = el.getAttribute('data-lang');
+        if (t[key]) {
+            // 对于按钮元素，更新innerHTML以保留图标
+            if (el.tagName === 'BUTTON') {
+                // 保留表情符号
+                const emoji = el.textContent.match(/[\u{1F300}-\u{1F9FF}]/u);
+                if (emoji) {
+                    el.textContent = `${emoji[0]} ${t[key].replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()}`;
+                } else {
+                    el.textContent = t[key];
+                }
+            } else {
+                el.textContent = t[key];
+            }
+        }
+    });
+    document.title = t.title;
+}
+
+// 显示首页
+function showHomePage() {
+    const homePage = document.getElementById('homePage');
+    homePage.style.display = 'flex';
+    homePage.style.alignItems = 'center';
+    homePage.style.justifyContent = 'center';
+    document.getElementById('modePage').style.display = 'none';
+    document.getElementById('gameHeader').style.display = 'none';
+    document.getElementById('setupPanel').style.display = 'none';
+    const gameArea = document.querySelector('.game-area');
+    if (gameArea) gameArea.style.display = 'none';
+    const gamePanel = document.getElementById('gamePanel');
+    if (gamePanel) gamePanel.style.display = 'none';
+    const resultPanel = document.getElementById('resultPanel');
+    if (resultPanel) resultPanel.style.display = 'none';
+}
+
+// 显示模式选择页
+function showModePage() {
+    document.getElementById('homePage').style.display = 'none';
+    const modePage = document.getElementById('modePage');
+    modePage.style.display = 'flex';
+    modePage.style.alignItems = 'center';
+    modePage.style.justifyContent = 'center';
+    document.getElementById('gameHeader').style.display = 'none';
+    document.getElementById('setupPanel').style.display = 'none';
+    const gameArea = document.querySelector('.game-area');
+    if (gameArea) gameArea.style.display = 'none';
+    const gamePanel = document.getElementById('gamePanel');
+    if (gamePanel) gamePanel.style.display = 'none';
+}
+
+// 选择游戏模式
+function selectMode(mode) {
+    currentGameMode = mode;
+    if (mode === 'classic' || mode === 'custom') {
+        showGameSetup(mode);
+    } else {
+        alert(currentLanguage === 'ja' ? 'このモードは近日公開予定です' : '此模式即将推出');
+    }
+}
+
+// 显示游戏设置页面
+function showGameSetup(mode) {
+    document.getElementById('homePage').style.display = 'none';
+    document.getElementById('modePage').style.display = 'none';
+    document.getElementById('gameHeader').style.display = 'none';
+    document.getElementById('setupPanel').style.display = 'block';
+    const gameArea = document.querySelector('.game-area');
+    if (gameArea) gameArea.style.display = 'none';
+    const gamePanel = document.getElementById('gamePanel');
+    if (gamePanel) gamePanel.style.display = 'none';
+    
+    // 根据模式显示/隐藏设置选项
+    const isClassicMode = mode === 'classic';
+    
+    // 经典模式：隐藏所有参数和AI设置区域
+    document.querySelectorAll('.setup-section').forEach(section => {
+        if (section.querySelector('#retailerAI') || section.querySelector('#transportDelay')) {
+            section.style.display = isClassicMode ? 'none' : 'block';
+        }
+    });
+    
+    // 经典模式：只显示20/30/40周，隐藏50/60周
+    document.querySelectorAll('.round-btn').forEach(btn => {
+        const rounds = parseInt(btn.getAttribute('data-rounds'));
+        if (isClassicMode && (rounds === 50 || rounds === 60)) {
+            btn.style.display = 'none';
+        } else {
+            btn.style.display = 'inline-block';
+        }
+    });
+    
+    // 事件卡片选项：暂时隐藏（未实现）
+    const eventCardSection = document.getElementById('eventCardSection');
+    if (eventCardSection) {
+        eventCardSection.style.display = mode === 'custom' ? 'block' : 'none';
+        // 自定义模式下也暂时禁用（功能未实现）
+        const eventCheckbox = document.getElementById('enableEventCards');
+        if (eventCheckbox) {
+            eventCheckbox.disabled = true;
+            eventCheckbox.checked = false;
+        }
+    }
+}
+
 function resetGame() {
     game = null;
-    document.getElementById('setupPanel').style.display = 'block';
-    document.getElementById('gamePanel').style.display = 'none';
-    document.getElementById('resultPanel').style.display = 'none';
-    document.getElementById('phaseModal').style.display = 'none';
-    
-    // 隐藏"ホームに戻る"按钮
-    const resetBtnHeader = document.getElementById('resetBtnHeader');
-    if (resetBtnHeader) {
-        resetBtnHeader.style.display = 'none';
-    }
+    showHomePage();
     
     // 清除选择
     document.querySelectorAll('.role-btn').forEach(btn => {
         btn.classList.remove('selected');
+    });
+    
+    // 重置AI设置
+    updateAISettings();
+    
+    // 重置游戏模式
+    currentGameMode = 'classic';
+}
+
+// 更新AI设置：禁用玩家选择的角色对应的AI下拉框
+function updateAISettings() {
+    // 获取玩家选择的角色
+    const selectedRoleBtn = document.querySelector('.role-btn.selected');
+    const playerRole = selectedRoleBtn ? selectedRoleBtn.getAttribute('data-role') : null;
+    
+    // AI设置映射
+    const aiSelects = {
+        'retailer': document.getElementById('retailerAI'),
+        'supplier2': document.getElementById('supplier2AI'),
+        'supplier1': document.getElementById('supplier1AI'),
+        'factory': document.getElementById('factoryAI')
+    };
+    
+    // 重置所有AI设置
+    Object.entries(aiSelects).forEach(([role, select]) => {
+        if (select) {
+            if (role === playerRole) {
+                // 禁用玩家选择的角色
+                select.disabled = true;
+                select.value = 'random'; // 设置为默认值
+                select.style.opacity = '0.5';
+                select.style.cursor = 'not-allowed';
+            } else {
+                // 启用其他角色
+                select.disabled = false;
+                select.style.opacity = '1';
+                select.style.cursor = 'pointer';
+            }
+        }
     });
 }
 
@@ -1386,9 +1669,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
+            
+            // 更新AI设置：禁用玩家选择的角色对应的AI设置
+            updateAISettings();
         });
     });
 
-    // 开始游戏按钮
+    // ゲーム開始按钮
     document.getElementById('startBtn').addEventListener('click', startGame);
 });

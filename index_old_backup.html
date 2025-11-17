@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">ビールゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- ホームページ -->
+        <div id="homePage" class="page-container">
+            <div class="home-content">
+                <h1 class="home-title" data-i18n="home.title">ビールゲーム</h1>
+                <p class="home-subtitle" data-i18n="home.subtitle">サプライチェーンマネジメント学習ゲーム</p>
+                
+                <!-- 言語選択 -->
+                <div class="language-selector">
+                    <label data-i18n="home.selectLanguage">言語選択</label>
+                    <div class="language-buttons">
+                        <button class="lang-btn active" onclick="selectLanguage('ja')" data-lang="ja">
+                            🇯🇵 日本語
+                        </button>
+                        <button class="lang-btn" onclick="selectLanguage('zh')" data-lang="zh">
+                            🇨🇳 中文
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- ゲームモード選択 -->
+                <div class="menu-buttons">
+                    <button class="menu-btn primary" onclick="showModePage()">
+                        <span class="btn-icon">🎮</span>
+                        <span data-i18n="home.singlePlayer">シングルプレイヤー</span>
+                    </button>
+                    <button class="menu-btn disabled" disabled>
+                        <span class="btn-icon">👥</span>
+                        <span data-i18n="home.multiPlayer">マルチプレイヤー</span>
+                        <small data-i18n="home.multiPlayerDisabled">（近日公開）</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- モード選択ページ -->
+        <div id="modePage" class="page-container" style="display: none;">
+            <div class="mode-content">
+                <h2 data-i18n="mode.title">ゲームモード選択</h2>
+                
+                <div class="mode-cards">
+                    <!-- クラシックモード -->
+                    <div class="mode-card" onclick="selectMode('classic')">
+                        <div class="mode-icon">🎯</div>
+                        <h3 data-i18n="mode.classic.title">クラシックモード</h3>
+                        <p data-i18n="mode.classic.description">伝統的なビールゲーム体験</p>
+                        <ul class="mode-features">
+                            <li data-i18n="mode.classic.feature1">標準的なルール</li>
+                            <li data-i18n="mode.classic.feature2">4つの役割</li>
+                            <li data-i18n="mode.classic.feature3">サプライチェーン管理学習</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- カードモード -->
+                    <div class="mode-card disabled">
+                        <div class="mode-icon">🃏</div>
+                        <h3 data-i18n="mode.card.title">カードモード</h3>
+                        <p data-i18n="mode.card.description">カードを使った新しい体験</p>
+                        <ul class="mode-features">
+                            <li data-i18n="mode.card.feature1">特殊カード効果</li>
+                            <li data-i18n="mode.card.feature2">戦略的要素追加</li>
+                            <li data-i18n="mode.card.feature3">より高い挑戦性</li>
+                        </ul>
+                        <span class="coming-soon" data-i18n="mode.comingSoon">近日公開</span>
+                    </div>
+                </div>
+                
+                <button class="back-btn" onclick="showHomePage()">
+                    <span data-i18n="common.back">戻る</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ゲーム設定パネル -->
+        <div class="setup-panel" id="setupPanel" style="display: none;">
+            <div class="setup-content">
+                <h2>ゲーム設定</h2>
+                
+                <div class="setup-section">
+                    <h3>総週数</h3>
+                    <div class="round-select">
+                        <button class="round-btn" data-rounds="20">20週</button>
+                        <button class="round-btn selected" data-rounds="30">30週</button>
+                        <button class="round-btn" data-rounds="40">40週</button>
+                    </div>
+                </div>
+                
+                <div class="setup-section">
+                    <h3>役割を選択してください</h3>
+                    <div class="role-select">
+                        <button class="role-btn" data-role="retailer">小売業者</button>
+                        <button class="role-btn" data-role="supplier2">二次卸売業者</button>
+                        <button class="role-btn" data-role="supplier1">一次卸売業者</button>
+                        <button class="role-btn" data-role="factory">工場</button>
+                    </div>
+                </div>
+
+                <div class="setup-section">
+                    <h3>AI役割設定</h3>
+                    <div class="ai-settings">
+                    <div class="ai-role">
+                        <label>小売業者 AI:</label>
+                        <select id="retailerAI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="calm">冷静型</option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>二次卸売業者 AI:</label>
+                        <select id="supplier2AI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="calm">冷静型</option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>一次卸売業者 AI:</label>
+                        <select id="supplier1AI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="calm">冷静型</option>
+                        </select>
+                    </div>
+                    <div class="ai-role">
+                        <label>工場 AI:</label>
+                        <select id="factoryAI">
+                            <option value="random" selected>ランダム</option>
+                            <option value="panic">パニック型</option>
+                            <option value="safe">安全型</option>
+                            <option value="calm">冷静型</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <h3>ゲームパラメータ</h3>
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label>輸送遅延:</label>
+                        <input type="number" id="transportDelay" value="1" min="0" max="5">
+                    </div>
+                    <div class="param-item">
+                        <label>入荷時間:</label>
+                        <input type="number" id="receivingTime" value="1" min="0" max="3">
+                    </div>
+                    <div class="param-item">
+                        <label>生産時間:</label>
+                        <input type="number" id="productionTime" value="1" min="1" max="3">
+                    </div>
+                    <div class="param-item">
+                        <label>在庫コスト:</label>
+                        <input type="number" id="inventoryCost" value="1" min="0.5" max="5" step="0.5">
+                    </div>
+                    <div class="param-item">
+                        <label>欠品コスト:</label>
+                        <input type="number" id="backorderCost" value="2" min="1" max="10" step="0.5">
+                    </div>
+                </div>
+            </div>
+
+            <button class="start-btn" id="startBtn">ゲーム開始</button>
+            </div> <!-- setup-content閉じ -->
+        </div> <!-- setupPanel閉じ -->
+
+        <!-- ゲームフェーズモーダル -->
+        <div class="modal" id="phaseModal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="modalTitle">週開始</h2>
+                <div id="modalBody"></div>
+                <div class="modal-actions">
+                    <button class="modal-btn primary" id="modalConfirmBtn">確認</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div class="game-panel" id="gamePanel" style="display: none;">
+            <!-- ゲームヘッダー -->
+            <header>
+                <h1>🍺 ビールゲーム - シングルプレイヤーモード</h1>
+                <div class="game-info">
+                    <span>週: <strong id="currentRound">0</strong></span>
+                    <span>総週数: <strong id="totalRounds">30</strong></span>
+                    <button class="reset-btn-header" id="resetBtnHeader" onclick="resetGame()" style="display: none;">ホームに戻る</button>
+                </div>
+            </header>
+            
+            <!-- プレイヤー操作エリア -->
+            <div class="main-game-area">
+                <div class="game-header-info">
+                    <div class="header-left">
+                        <h2 id="playerRoleName">🏪 小売業者</h2>
+                        <div class="cost-display">
+                            <span class="total-cost">累計コスト: <strong id="totalCost">0</strong> ドル</span>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <button class="control-btn next-round-btn" id="nextRoundMainBtn" onclick="nextRoundMain()" disabled>
+                            次の週 ➔
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ビジュアル操作エリア -->
+                <div class="visual-operation-area">
+                    <!-- 在庫エリア -->
+                    <div class="operation-section inventory-section">
+                        <h3>📦 在庫エリア</h3>
+                        <div class="inventory-display" id="inventoryDisplay">
+                            <div class="inventory-count">12</div>
+                            <div class="inventory-label">個</div>
+                        </div>
+                        <div class="info-bar">
+                            <span>発注残: <strong id="backorderDisplay">0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- 出荷エリア -->
+                    <div class="operation-section shipping-section">
+                        <h3>🚚 出荷エリア</h3>
+                        <div class="demand-info">
+                            <p>今週の需要: <strong id="demandDisplay">4</strong> 個</p>
+                            <p>発注残: <strong id="backorderNeedDisplay">0</strong> 個</p>
+                            <p class="total-need">出荷必要数: <strong id="totalNeedDisplay">4</strong> 個</p>
+                        </div>
+                        <div class="shipping-controls-main">
+                            <label>出荷数量:</label>
+                            <input type="number" id="shipInput" min="0" value="0">
+                            <button class="max-btn" onclick="setMaxShipping()">最大</button>
+                        </div>
+                        <button class="action-btn ship-btn" onclick="confirmShipping()">✓ 出荷確認</button>
+                    </div>
+
+                    <!-- 発注エリア -->
+                    <div class="operation-section order-section">
+                        <h3 id="orderSectionTitle">📝 発注エリア</h3>
+                        <div class="order-info">
+                            <p class="delay-info">📅 遅延: <strong id="delayDisplay">2</strong> 週後に到着</p>
+                            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                                💡 在庫と需要に基づいて発注量を決定してください
+                            </p>
+                        </div>
+                        <div class="order-controls-main">
+                            <label id="orderInputLabel">発注数量:</label>
+                            <input type="number" id="orderInput" min="0" value="4">
+                        </div>
+                        <button class="action-btn order-btn" onclick="confirmOrder()">✓ 発注確認</button>
+                    </div>
+                </div>
+
+                <!-- 入荷処理区と輸送可視化 -->
+                <div class="logistics-area">
+                    <!-- 入荷処理区 -->
+                    <div class="receiving-visualization">
+                        <h3>📥 入荷処理区</h3>
+                        <div class="receiving-timeline" id="receivingTimeline">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 輸送可視化 -->
+                    <div class="transit-visualization">
+                        <h3 id="transitTitle">🚛 輸送中の商品</h3>
+                        <div class="transit-timeline" id="transitTimeline">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 履歴 -->
+                <div class="history-section">
+                    <h3>📊 週別履歴</h3>
+                    <div class="history-table-container">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>週</th>
+                                    <th>入荷</th>
+                                    <th>在庫</th>
+                                    <th>出荷</th>
+                                    <th>発注残</th>
+                                    <th>発注</th>
+                                    <th>コスト</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- 動的生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-panel" id="resultPanel" style="display: none;">
+            <h2>🎉 ゲーム終了</h2>
+            
+            <!-- スコアカード -->
+            <div class="final-scores" id="finalScores"></div>
+            
+            <!-- タブナビゲーション -->
+            <div class="stats-tabs">
+                <button class="tab-btn active" onclick="switchStatsTab('scores')">🏆 スコア</button>
+                <button class="tab-btn" onclick="switchStatsTab('table')">📊 詳細データ</button>
+                <button class="tab-btn" onclick="switchStatsTab('charts')">📈 グラフ分析</button>
+            </div>
+            
+            <!-- スコアタブ -->
+            <div class="stats-tab-content" id="scoresTab" style="display: block;"></div>
+            
+            <!-- 詳細データタブ -->
+            <div class="stats-tab-content" id="tableTab" style="display: none;">
+                <div class="stats-table-container" id="statsTableContainer"></div>
+            </div>
+            
+            <!-- グラフ分析タブ -->
+            <div class="stats-tab-content" id="chartsTab" style="display: none;">
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <canvas id="inventoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="backorderChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="orderChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="reset-btn" onclick="resetGame()">もう一度プレイ</button>
+        </div> <!-- resultPanel閉じ -->
+    </div> <!-- container閉じ -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="lang.js"></script>
+    <script src="game.js"></script>
+    <script>
+        // グローバル変数
+        let selectedGameMode = 'classic';
+        
+        // 言語選択
+        function selectLanguage(lang) {
+            setLanguage(lang);
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            updateAllTranslations();
+        }
+        
+        // 全ての翻訳を更新
+        function updateAllTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const translation = t(key);
+                // 如果翻译存在且不等于key本身，才更新
+                if (translation && translation !== key) {
+                    el.textContent = translation;
+                }
+            });
+            const titleEl = document.getElementById('pageTitle');
+            if (titleEl) {
+                titleEl.textContent = t('home.title');
+            }
+        }
+        
+        // ページ表示
+        function showHomePage() {
+            document.getElementById('homePage').style.display = 'block';
+            document.getElementById('modePage').style.display = 'none';
+            document.getElementById('setupPanel').style.display = 'none';
+        }
+        
+        function showModePage() {
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('modePage').style.display = 'block';
+            document.getElementById('setupPanel').style.display = 'none';
+        }
+        
+        function showSetupPanel() {
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('modePage').style.display = 'none';
+            document.getElementById('setupPanel').style.display = 'block';
+        }
+        
+        // モード選択
+        function selectMode(mode) {
+            selectedGameMode = mode;
+            if (mode === 'classic') {
+                showSetupPanel();
+            } else {
+                alert(t('mode.comingSoon'));
+            }
+        }
+        
+        // ページ読み込み時に初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            initLanguage();
+            updateAllTranslations();
+        });
+        
+        // 言語変更を監視
+        document.addEventListener('languageChanged', updateAllTranslations);
+    </script>
+</body>
+</html>

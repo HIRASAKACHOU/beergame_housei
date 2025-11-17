@@ -3,109 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ビールゲーム - シングルプレイヤーモード</title>
+    <title>ビールゲーム</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🍺 ビールゲーム - シングルプレイヤーモード</h1>
+        <!-- 首页 -->
+        <div id="homePage" class="page-container">
+            <div class="home-content">
+                <h1 class="home-title" data-lang="title">🍺 ビールゲーム</h1>
+                <p class="home-subtitle" data-lang="subtitle">サプライチェーンマネジメント学習ゲーム</p>
+                
+                <!-- 语言选择 -->
+                <div class="language-selector" style="display: none;">
+                    <label data-lang="langSelect">言語選択</label>
+                    <div class="language-buttons">
+                        <button class="lang-btn active" onclick="selectLanguage('ja')">
+                            🇯🇵 日本語
+                        </button>
+                        <button class="lang-btn" onclick="selectLanguage('zh')" style="display: none;">
+                            🇨🇳 中文
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 游戏模式选择 -->
+                <div class="menu-buttons">
+                    <button class="menu-btn primary" onclick="showModePage()">
+                        <span class="btn-icon">🎮</span>
+                        <span class="btn-text" data-lang="singlePlayer">シングルプレイヤー</span>
+                    </button>
+                    <button class="menu-btn disabled" disabled>
+                        <span class="btn-icon">👥</span>
+                        <span class="btn-text" data-lang="multiPlayer">マルチプレイヤー</span>
+                        <span class="btn-hint" data-lang="comingSoon">（近日公開）</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模式选择页 -->
+        <div id="modePage" class="page-container">
+            <div class="mode-content">
+                <h2 data-lang="modeSelect">ゲームモード選択</h2>
+                
+                <div class="mode-cards">
+                    <!-- 经典模式 -->
+                    <div class="mode-card" onclick="selectMode('classic')">
+                        <div class="mode-icon">🎯</div>
+                        <h3 data-lang="classicMode">クラシックモード</h3>
+                        <p data-lang="classicDesc">伝統的なビールゲーム体験</p>
+                        <ul class="mode-features">
+                            <li data-lang="classicFeature1">標準的なルール</li>
+                            <li data-lang="classicFeature2">4つの役割</li>
+                            <li data-lang="classicFeature3">サプライチェーン管理学習</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 卡片模式 -->
+                    <div class="mode-card disabled">
+                        <div class="mode-icon">🃏</div>
+                        <h3 data-lang="cardMode">カードモード</h3>
+                        <p data-lang="cardDesc">カードを使った新しい体験</p>
+                        <ul class="mode-features">
+                            <li data-lang="cardFeature1">特殊カード効果</li>
+                            <li data-lang="cardFeature2">戦略的要素追加</li>
+                            <li data-lang="cardFeature3">より高い挑戦性</li>
+                        </ul>
+                        <span class="coming-soon" data-lang="comingSoon">近日公開</span>
+                    </div>
+                    
+                    <!-- 自定义模式 -->
+                    <div class="mode-card" onclick="selectMode('custom')">
+                        <div class="mode-icon">⚙️</div>
+                        <h3 data-lang="customMode">カスタムモード</h3>
+                        <p data-lang="customDesc">自由にゲームをカスタマイズ</p>
+                        <ul class="mode-features">
+                            <li data-lang="customFeature1">パラメータ調整</li>
+                            <li data-lang="customFeature2">特殊ルール設定</li>
+                            <li data-lang="customFeature3">高度なカスタマイズ</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <button class="back-btn" onclick="showHomePage()">
+                    <span data-lang="back">戻る</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 游戏头部（游戏开始后显示） -->
+        <header id="gameHeader">
+            <div class="header-left">
+                <h1>🍺 ビールゲーム - シングルプレイヤーモード</h1>
+            </div>
             <div class="game-info">
                 <span>週: <strong id="currentRound">0</strong></span>
                 <span>総週数: <strong id="totalRounds">30</strong></span>
-                <button class="reset-btn-header" id="resetBtnHeader" onclick="resetGame()" style="display: none;">ホームに戻る</button>
+                <button class="reset-btn-header" id="resetBtnHeader" onclick="resetGame()">ホームに戻る</button>
             </div>
         </header>
 
+        <!-- 游戏设置页 -->
         <div class="setup-panel" id="setupPanel">
-            <h2>ゲーム設定</h2>
-            <div class="setup-section">
-                <h3>総週数</h3>
-                <div class="round-select">
-                    <button class="round-btn" data-rounds="20">20週</button>
-                    <button class="round-btn selected" data-rounds="30">30週</button>
-                    <button class="round-btn" data-rounds="40">40週</button>
+            <div class="setup-content">
+                <h2 data-lang="gameSetup">⚙️ ゲーム設定</h2>
+                
+                <div class="setup-section">
+                    <h3 data-lang="totalWeeks">📅 総週数</h3>
+                    <div class="round-select">
+                        <button class="round-btn" data-rounds="20" data-lang="weeks20">20週</button>
+                        <button class="round-btn selected" data-rounds="30" data-lang="weeks30">30週</button>
+                        <button class="round-btn" data-rounds="40" data-lang="weeks40">40週</button>
+                        <button class="round-btn" data-rounds="50" data-lang="weeks50">50週</button>
+                        <button class="round-btn" data-rounds="60" data-lang="weeks60">60週</button>
+                    </div>
                 </div>
-            </div>
-            <div class="setup-section">
-                <h3>役割を選択してください</h3>
-                <div class="role-select">
-                    <button class="role-btn" data-role="retailer">小売業者</button>
-                    <button class="role-btn" data-role="supplier2">二次卸売業者</button>
-                    <button class="role-btn" data-role="supplier1">一次卸売業者</button>
-                    <button class="role-btn" data-role="factory">工場</button>
+                
+                <div class="setup-section">
+                    <h3 data-lang="selectRole">👤 役割を選択してください</h3>
+                    <div class="role-select">
+                        <button class="role-btn" data-role="retailer" data-lang="roleRetailer">🏪 小売業者</button>
+                        <button class="role-btn" data-role="supplier2" data-lang="roleSupplier2">📦 二次卸売業者</button>
+                        <button class="role-btn" data-role="supplier1" data-lang="roleSupplier1">🚚 一次卸売業者</button>
+                        <button class="role-btn" data-role="factory" data-lang="roleFactory">🏭 工場</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="setup-section">
-                <h3>AI役割設定</h3>
-                <div class="ai-settings">
-                    <div class="ai-role">
-                        <label>小売業者 AI:</label>
-                        <select id="retailerAI">
-                            <option value="random" selected>ランダム</option>
-                            <option value="panic">パニック型</option>
-                            <option value="safe">安全型</option>
-                            <option value="calm">冷静型</option>
-                        </select>
-                    </div>
-                    <div class="ai-role">
-                        <label>二次卸売業者 AI:</label>
-                        <select id="supplier2AI">
-                            <option value="random" selected>ランダム</option>
-                            <option value="panic">パニック型</option>
-                            <option value="safe">安全型</option>
-                            <option value="calm">冷静型</option>
-                        </select>
-                    </div>
-                    <div class="ai-role">
-                        <label>一次卸売業者 AI:</label>
-                        <select id="supplier1AI">
-                            <option value="random" selected>ランダム</option>
-                            <option value="panic">パニック型</option>
-                            <option value="safe">安全型</option>
-                            <option value="calm">冷静型</option>
-                        </select>
-                    </div>
-                    <div class="ai-role">
-                        <label>工場 AI:</label>
-                        <select id="factoryAI">
-                            <option value="random" selected>ランダム</option>
-                            <option value="panic">パニック型</option>
-                            <option value="safe">安全型</option>
-                            <option value="calm">冷静型</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="setup-section">
-                <h3>ゲームパラメータ</h3>
-                <div class="param-grid">
-                    <div class="param-item">
-                        <label>輸送遅延:</label>
-                        <input type="number" id="transportDelay" value="1" min="0" max="5">
-                    </div>
-                    <div class="param-item">
-                        <label>入荷時間:</label>
-                        <input type="number" id="receivingTime" value="1" min="0" max="3">
-                    </div>
-                    <div class="param-item">
-                        <label>生産時間:</label>
-                        <input type="number" id="productionTime" value="1" min="1" max="3">
-                    </div>
-                    <div class="param-item">
-                        <label>在庫コスト:</label>
-                        <input type="number" id="inventoryCost" value="1" min="0.5" max="5" step="0.5">
-                    </div>
-                    <div class="param-item">
-                        <label>欠品コスト:</label>
-                        <input type="number" id="backorderCost" value="2" min="1" max="10" step="0.5">
+                <div class="setup-section">
+                    <h3 data-lang="aiSettings">🤖 AI役割設定</h3>
+                    <div class="ai-settings">
+                        <div class="ai-role">
+                            <label data-lang="retailerAI">小売業者 AI:</label>
+                            <select id="retailerAI">
+                                <option value="random" selected data-lang="aiRandom">ランダム</option>
+                                <option value="panic" data-lang="aiPanic">パニック型</option>
+                                <option value="safe" data-lang="aiSafe">安全型</option>
+                                <option value="calm" data-lang="aiCalm">冷静型</option>
+                            </select>
+                        </div>
+                        <div class="ai-role">
+                            <label data-lang="supplier2AI">二次卸売業者 AI:</label>
+                            <select id="supplier2AI">
+                                <option value="random" selected data-lang="aiRandom">ランダム</option>
+                                <option value="panic" data-lang="aiPanic">パニック型</option>
+                                <option value="safe" data-lang="aiSafe">安全型</option>
+                                <option value="calm" data-lang="aiCalm">冷静型</option>
+                            </select>
+                        </div>
+                        <div class="ai-role">
+                            <label data-lang="supplier1AI">一次卸売業者 AI:</label>
+                            <select id="supplier1AI">
+                                <option value="random" selected data-lang="aiRandom">ランダム</option>
+                                <option value="panic" data-lang="aiPanic">パニック型</option>
+                                <option value="safe" data-lang="aiSafe">安全型</option>
+                                <option value="calm" data-lang="aiCalm">冷静型</option>
+                            </select>
+                        </div>
+                        <div class="ai-role">
+                            <label data-lang="factoryAI">工場 AI:</label>
+                            <select id="factoryAI">
+                                <option value="random" selected data-lang="aiRandom">ランダム</option>
+                                <option value="panic" data-lang="aiPanic">パニック型</option>
+                                <option value="safe" data-lang="aiSafe">安全型</option>
+                                <option value="calm" data-lang="aiCalm">冷静型</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <button class="start-btn" id="startBtn">ゲーム開始</button>
+                <div class="setup-section">
+                    <h3 data-lang="gameParams">🎮 ゲームパラメータ</h3>
+                    <div class="param-grid">
+                        <div class="param-item">
+                            <label data-lang="transportDelay">🚛 輸送遅延:</label>
+                            <input type="number" id="transportDelay" value="1" min="1" max="5">
+                            <span class="param-unit" data-lang="weeks">週</span>
+                        </div>
+                        <div class="param-item">
+                            <label data-lang="receivingTime">📥 入荷時間:</label>
+                            <input type="number" id="receivingTime" value="1" min="1" max="3">
+                            <span class="param-unit" data-lang="weeks">週</span>
+                        </div>
+                        <div class="param-item">
+                            <label data-lang="productionTime">🏭 生産時間:</label>
+                            <input type="number" id="productionTime" value="1" min="1" max="3">
+                            <span class="param-unit" data-lang="weeks">週</span>
+                        </div>
+                        <div class="param-item">
+                            <label data-lang="inventoryCost">💰 在庫コスト:</label>
+                            <input type="number" id="inventoryCost" value="1" min="0.5" max="5" step="0.5">
+                            <span class="param-unit" data-lang="dollarsPerUnit">ドル/個</span>
+                        </div>
+                        <div class="param-item">
+                            <label data-lang="backorderCost">⚠️ 欠品コスト:</label>
+                            <input type="number" id="backorderCost" value="2" min="1" max="10" step="0.5">
+                            <span class="param-unit" data-lang="dollarsPerUnit">ドル/個</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 事件卡牌设置（仅自定义模式显示） -->
+                <div class="setup-section" id="eventCardSection" style="display: none;">
+                    <h3 data-lang="eventCards">🎴 イベントカード</h3>
+                    <div class="event-card-options">
+                        <label class="checkbox-label disabled-option">
+                            <input type="checkbox" id="enableEventCards" disabled>
+                            <span data-lang="enableEventCards">イベントカードを有効にする</span>
+                        </label>
+                        <p class="option-description" data-lang="eventCardsDevMsg">🚧 この機能は開発中です（近日公開予定）</p>
+                    </div>
+                </div>
+
+                <div class="setup-buttons">
+                    <button class="back-btn" onclick="showModePage()" data-lang="back">戻る</button>
+                    <button class="start-btn" id="startBtn" data-lang="startGame">🎮 ゲーム開始</button>
+                </div>
+            </div>
         </div>
 
         <!-- ゲームフェーズモーダル -->
@@ -119,7 +233,7 @@
             </div>
         </div>
 
-        <div class="game-panel" id="gamePanel" style="display: none;">
+        <div class="game-panel" id="gamePanel">
             <!-- プレイヤー操作エリア -->
             <div class="main-game-area">
                 <div class="game-header-info">

@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">ビールゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- ホームページ（新版） -->
+        <div id="homePage" class="page-container">
+            <div class="home-content">
+                <h1 class="home-title" data-i18n="home.title">ビールゲーム</h1>
+                <p class="home-subtitle" data-i18n="home.subtitle">サプライチェーンマネジメント学習ゲーム</p>
+                
+                <!-- 言語選択 -->
+                <div class="language-selector">
+                    <label data-i18n="home.selectLanguage">言語選択</label>
+                    <div class="language-buttons">
+                        <button class="lang-btn active" onclick="selectLanguage('ja')" data-lang="ja">
+                            🇯🇵 日本語
+                        </button>
+                        <button class="lang-btn" onclick="selectLanguage('zh')" data-lang="zh">
+                            🇨🇳 中文
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- ゲームモード選択 -->
+                <div class="menu-buttons">
+                    <button class="menu-btn primary" onclick="showModePage()">
+                        <span class="btn-icon">🎮</span>
+                        <span data-i18n="home.singlePlayer">シングルプレイヤー</span>
+                    </button>
+                    <button class="menu-btn disabled" disabled>
+                        <span class="btn-icon">👥</span>
+                        <span data-i18n="home.multiPlayer">マルチプレイヤー</span>
+                        <small data-i18n="home.multiPlayerDisabled">（近日公開）</small>
+                    </button>
+                </div>
+            </div>
+        </div>
