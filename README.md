@@ -112,7 +112,7 @@ beergame_housei/
 
 ## 🏫 関連情報
 
-**開発者**: Hosei University  
+**開発者**: Kou, Graduate School of Innovation and Management, Hosei University 
 **対象**: ビジネス教育・サプライチェーン学習  
 **バージョン**: 1.0.0  
 **最終更新**: 2025-11-17  
