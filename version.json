@@ -1,6 +1,11 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "versionHistory": {
+    "1.0.2": {
+      "date": "2025-11-17",
+      "type": "patch",
+      "description": "手机端布局溢出修复 - 防止内容超出屏幕"
+    },
     "1.0.1": {
       "date": "2025-11-17",
       "type": "patch",
